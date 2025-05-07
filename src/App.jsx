@@ -1,13 +1,13 @@
 import React from 'react'
 import { Routes, Route, BrowserRouter } from 'react-router-dom'
-import PaperList from './PaperList.jsx'
+import MainPage from './MainPage.jsx'
 import PaperDetail from './PaperDetail.jsx'
 
 function App () {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<PaperList />} />
+        <Route path="/" element={<MainPage />} />
         <Route path="/paper/:id" element={<PaperDetail />} />
       </Routes></BrowserRouter>
   )
