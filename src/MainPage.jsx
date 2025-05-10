@@ -15,13 +15,17 @@ function MainPage () {
     // 消息列表状态（包含消息内容、方向、加载状态）
     const [messages, setMessages] = useState([])
     const [inputText, setInputText] = useState('')
+    const [randomNumber, setRandomNumber] = useState(0)
     const messagesEndRef = useRef(null)
 
     // 自动滚动到底部
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
     }
-
+    useEffect(() => {
+        setRandomNumber(Math.floor(101 + Math.random() * (Number.MAX_SAFE_INTEGER - 101)))
+    }
+        , [])
     useEffect(() => {
         scrollToBottom()
     }, [messages])
@@ -47,7 +51,7 @@ function MainPage () {
 
         try {
             // 发送请求
-            const response = await postmessage(inputText)
+            const response = await postmessage(inputText, randomNumber)
             const text = response.data.llm_content
             // 更新系统消息状态
             setMessages(prev =>
