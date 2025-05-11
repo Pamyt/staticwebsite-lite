@@ -30,43 +30,63 @@ function MainPage () {
         scrollToBottom()
     }, [messages])
 
-    // 发送消息处理
+    const MAX_RETRIES = 5 // 最大重试次数
+
     const handleSend = async (e) => {
         e.preventDefault()
         if (!inputText.trim()) return
 
-        // 添加用户消息和加载状态
-        const newMessage = {
-            text: inputText,
-            isUser: true,
-            isLoading: false
-        }
-
-        // 添加加载中的系统消息
+        // 添加用户消息和初始加载状态
         setMessages(prev => [
             ...prev,
-            newMessage,
+            { text: inputText, isUser: true, isLoading: false },
             { text: '', isUser: false, isLoading: true }
         ])
 
+        let retryCount = 0
+        let success = false
+        let finalResponse = null
+
+        // 带重试机制的请求函数
+        const sendWithRetry = async () => {
+            try {
+                const response = await postmessage(inputText, randomNumber)
+                success = true
+                finalResponse = response
+            } catch (error) {
+                if (retryCount < MAX_RETRIES) {
+                    retryCount++
+                    console.log(`第 ${retryCount} 次重试...`)
+                    await new Promise(resolve => setTimeout(resolve, 1000)) // 1秒延迟[4](@ref)
+                    return sendWithRetry()
+                } else {
+                    throw error
+                }
+            }
+        }
+
         try {
-            // 发送请求
-            const response = await postmessage(inputText, randomNumber)
-            const text = response.data.llm_content
-            // 更新系统消息状态
+            await sendWithRetry()
             setMessages(prev =>
                 prev.map(msg =>
-                    msg.isLoading ? { ...msg, text: text, isLoading: false } : msg
+                    msg.isLoading ? {
+                        ...msg,
+                        text: success ? finalResponse.data.llm_content : '请求失败，请重试',
+                        isLoading: false
+                    } : msg
                 )
             )
         } catch (error) {
-            // 处理错误情况
             setMessages(prev =>
                 prev.map(msg =>
-                    msg.isLoading ? { ...msg, text: '请求失败，请重试', isLoading: false } : msg
+                    msg.isLoading ? {
+                        ...msg,
+                        text: `服务异常（已重试${MAX_RETRIES}次）`,
+                        isLoading: false
+                    } : msg
                 )
             )
-            console.error('Error sending message:', error)
+            console.error('最终请求失败:', error)
         }
 
         setInputText('')
