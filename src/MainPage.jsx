@@ -14,6 +14,7 @@ import {
     ListItemButton,
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
+import { UserOutlined, RobotOutlined } from '@ant-design/icons'
 import { APIProvider, Map } from '@vis.gl/react-google-maps'
 import { postmessage, getallconvid, getcontentbyid } from './api'
 
@@ -191,8 +192,8 @@ function MainPage () {
     }
     return (
         <Box sx={{
-            height: '100vh',
-            width: '100vw',
+            height: '88vh',
+            width: '80vw',
             display: 'flex',
             gap: 2,
             p: 2

@@ -43,3 +43,32 @@ export function getcontentbyid(userid: number, conversation_id: number) {
         timeout: TIMEOUT
     });
 }
+export function getallpost() {
+    return axios.get(`${API_BASE_URL}/get_all_post`, {},);
+}
+export function makepost(userid: number, post_title: string, content: string, travel_place: string,) {
+    return axios.post(`${API_BASE_URL}/make_post`, {
+        user_id: Number(userid),
+        post_title,
+        post_content: content,
+        travel_place,
+    }, {
+        timeout: TIMEOUT
+    });
+}
+export function likepost(userid: number, post_id: number) {
+    return axios.post(`${API_BASE_URL}/like_post`, {
+        user_id: Number(userid),
+        post_id: Number(post_id)
+    }, {
+        timeout: TIMEOUT
+    });
+}
+export function dislikepost(userid: number, post_id: number) {
+    return axios.post(`${API_BASE_URL}/dislike_post`, {
+        user_id: Number(userid),
+        post_id: Number(post_id)
+    }, {
+        timeout: TIMEOUT
+    });
+}

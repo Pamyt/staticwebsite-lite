@@ -34,7 +34,8 @@ const LoginPage = () => {
             const { data } = await login(loginData.username, loginData.password)
 
             sessionStorage.setItem('userid', data.user_id)
-            window.location.href = '/'
+            sessionStorage.setItem('username', loginData.username)
+            window.location.href = '/mainpage'
         } catch (error) {
             setErrors({
                 form: error.response?.data?.message || '登录失败，请检查凭证'
