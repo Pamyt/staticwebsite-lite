@@ -1,0 +1,6 @@
+.custom-card {
+    .ant-card-body {
+        padding: 10px !important;
+        /* 按需调整 */
+    }
+}

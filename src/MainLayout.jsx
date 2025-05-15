@@ -7,7 +7,7 @@ function MainLayout () {
         <Box sx={{ display: 'flex', height: '100vh' }}>
             {/* 左侧导航栏 */}
             <Box sx={{
-                width: "10vw",
+                width: "7vw",
                 bgcolor: '#f5f5f5',
                 borderRight: '1px solid #ddd',
                 p: 2
@@ -34,7 +34,7 @@ function MainLayout () {
             </Box>
 
             {/* 右侧内容区 */}
-            <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
+            <Box sx={{ flex: 1, overflow: 'auto' }}>
                 <Outlet /> {/* 路由内容渲染点 */}
             </Box>
         </Box>

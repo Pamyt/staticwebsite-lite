@@ -97,7 +97,10 @@ const PostPage = () => {
             </div>
         )
     }
-
+    const getTimestamp = (item) =>
+        typeof item.time_stamp === 'number'
+            ? item.time_stamp
+            : new Date(item.time_stamp).getTime()
     // 提交新笔记
     const handleSubmit = (values) => {
         const newPost = {
@@ -162,7 +165,7 @@ const PostPage = () => {
                     xl: 4
                 }}
                 dataSource={[...posts].sort((a, b) =>
-                    sortBy === 'likes' ? b.likes - a.likes : b.timestamp - a.timestamp
+                    sortBy === 'likes' ? b.likes - a.likes : getTimestamp(b) - getTimestamp(a)
                 )}
                 renderItem={post => (
                     <List.Item>

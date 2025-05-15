@@ -1,35 +1,49 @@
 import React, { useState, useEffect, useRef } from 'react'
 import {
-    TextField,
+    Layout,
     Button,
-    Typography,
-    Box,
+    Input,
     Card,
-    CardContent,
-    CardActions,
-    Stack,
-    List,
-    ListItem,
-    ListItemText,
-    ListItemButton,
-} from '@mui/material'
+    Typography,
+    Menu,
+    Spin,
+    Affix,
+    Tooltip
+} from 'antd'
+import {
+    MenuUnfoldOutlined,
+    MenuFoldOutlined,
+    MessageOutlined,
+    UserOutlined,
+    RobotOutlined,
+    PlusOutlined
+} from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
-import { UserOutlined, RobotOutlined } from '@ant-design/icons'
 import { APIProvider, Map } from '@vis.gl/react-google-maps'
 import { postmessage, getallconvid, getcontentbyid } from './api'
+import './MainPage.css'
 
+const { Header, Sider, Content } = Layout
+const { Text } = Typography
 
 function MainPage () {
-    // 消息列表状态（包含消息内容、方向、加载状态）
+    // 状态管理
+    const [collapsed, setCollapsed] = useState(false)
     const [messages, setMessages] = useState({})
+    const [randomNumber, setRandomNumber] = useState(0)
     const [inputText, setInputText] = useState('')
     const navigate = useNavigate()
-    const [randomNumber, setRandomNumber] = useState(0)
-    const messagesEndRef = useRef(null)
     const [allConvIds, setAllConvIds] = useState([])
     const [currentConv, setCurrentConv] = useState('')
-    const userId = useState(sessionStorage.getItem('userid')) ? sessionStorage.getItem('userid') : 0
+    const messagesEndRef = useRef(null)
+    const userId = sessionStorage.getItem('userid') || 0
 
+    // 布局样式配置
+    const layoutStyle = {
+        width: '90vw',
+        height: '100vh',
+        overflow: 'hidden'
+    }
     // 自动滚动到底部
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -84,7 +98,6 @@ function MainPage () {
     const MAX_RETRIES = 5 // 最大重试次数
 
     const handleSend = async (e) => {
-        e.preventDefault()
         if (!inputText.trim()) return
 
         // 添加用户消息和初始加载状态
@@ -145,173 +158,175 @@ function MainPage () {
 
 
     }
-
     // 消息气泡组件
-    // 消息气泡组件修改
-    // 消息气泡组件修改
-    const MessageBubble = ({ text, isUser, isLoading }) => {
-        return (
-            <Box sx={{
-                display: 'flex',
-                justifyContent: isUser ? 'flex-end' : 'flex-start',
-                mb: 2
-            }}>
-                <Card sx={{
-                    maxWidth: '70%',
-                    bgcolor: isUser ? '#2196f3' : '#e0e0e0',
-                    borderRadius: isUser
-                        ? '18px 18px 4px 18px'
-                        : '18px 18px 18px 4px'
-                }}>
-                    <CardContent>
-                        {isLoading ? (
-                            <Typography
-                                sx={{
-                                    animation: 'blink 1.4s infinite',
-                                    '@keyframes blink': {
-                                        '0%': { opacity: 0.2 },
-                                        '50%': { opacity: 1 },
-                                        '100%': { opacity: 0.2 }
-                                    }
-                                }}
-                            >
-                                ...
-                            </Typography>
-                        ) : (
-                            <Typography
-                                color={isUser ? 'white' : 'text.primary'}
-                                sx={{ wordBreak: 'break-word' }}
-                            >
-                                {text}
-                            </Typography>
-                        )}
-                    </CardContent>
-                </Card>
-            </Box>
-        )
-    }
-    return (
-        <Box sx={{
-            height: '88vh',
-            width: '80vw',
+    const MessageBubble = ({ text, isUser, isLoading }) => (
+        <div style={{
             display: 'flex',
-            gap: 2,
-            p: 2
+            justifyContent: isUser ? 'flex-end' : 'flex-start',
         }}>
-            <Box sx={{
-                flex: 2, // 20%宽度
-                borderRight: '1px solid #ddd',
-                overflow: 'auto',
-                bgcolor: 'background.paper'
-            }}>
-                <Box sx={{ p: 2, borderBottom: '1px solid #ddd' }}>
-                    <Button
-                        variant="contained"
-                        fullWidth
-                        onClick={() => {
-                            const newConvId = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
-                            setAllConvIds(prev => [...prev, newConvId])
-                            setCurrentConv(newConvId)
-                        }}
-                    >
-                        新建会话
-                    </Button>
-                </Box>
+            <Card
+                className="custom-card"
+                bordered={false}
+                style={{
+                    maxWidth: '70%',
+                    backgroundColor: isUser ? '#1890ff' : '#f0f0f0',
+                    marginTop: '15px',
+                }}
+                padding={1}
+            >
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    color: isUser ? 'white' : 'rgba(0, 0, 0, 0.88)'
+                }}>
+                    {isLoading ? (
+                        <Spin indicator={<span style={{ color: 'inherit' }}>...</span>} />
+                    ) : (
+                        <>
+                            {!isUser && <RobotOutlined />}
+                            <Text style={{ margin: 0, color: isUser ? 'white' : 'black' }}>{text}</Text>
+                            {isUser && <UserOutlined />}
+                        </>
+                    )}
+                </div>
+            </Card>
+        </div>
+    )
 
-                {/* 会话列表 */}
-                <List>
-                    {allConvIds.map((convId, index) => (
-                        <ListItemButton
-                            key={convId}
-                            selected={convId === currentConv}
+    return (
+        <Layout style={layoutStyle}>
+            {/* 可折叠侧边栏 */}
+            <Sider
+                collapsible
+                collapsed={collapsed}
+                onCollapse={(value) => setCollapsed(value)}
+                trigger={null}
+                width={150}
+                collapsedWidth={55}
+                style={{
+                    backgroundColor: '#fff',
+                    borderRight: '1px solid #f0f0f0'
+                }}
+            >
+                <Affix offsetTop={0}>
+                    <div style={{
+                        padding: '16px 12px', // 左右留出8px边距
+                        width: '100%',
+                    }}>
+                        <Tooltip title={collapsed ? "展开侧边栏" : "收起会话栏"}>
+                            <Button
+                                style={{
+                                    width: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    border: 'none',
+                                    marginBottom: 18,
+                                }}
+                                onClick={() => setCollapsed(!collapsed)}
+                            >
+                                {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                                {!collapsed && <span>缩小侧边栏</span>}
+                            </Button>
+                        </Tooltip>
+                        <Button
+                            type="primary"
+                            icon={<PlusOutlined />}
+                            block
                             onClick={() => {
-                                setCurrentConv(convId)
-                                if (!messages[convId]) {
-                                    // 初始化空会话
-                                    setMessages(prev => ({
-                                        ...prev,
-                                        [convId]: []
-                                    }))
-                                }
-                            }}
-                            sx={{
-                                '&.Mui-selected': {
-                                    bgcolor: '#e3f2fd'
-                                }
+                                const newConvId = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
+                                setAllConvIds(prev => [...prev, newConvId])
+                                setCurrentConv(newConvId)
                             }}
                         >
-                            <ListItemText
-                                primary={`会话 ${index + 1}`}
-                                secondary={`ID: ${convId}`}
-                            />
-                        </ListItemButton>
-                    ))}
-                </List>
-            </Box>
-            <Box sx={{
-                flex: 8,       // 70%宽度
-                display: 'flex',
-                flexDirection: 'column',
-                bgcolor: '#f5f5f5',
-                borderRadius: 2
-            }}>
-                {/* 消息列表区域 */}
-                <Box sx={{
-                    flex: 1,
-                    overflow: 'auto',
-                    mb: 2,
-                    bgcolor: '#f5f5f5',
-                    p: 2,
-                    borderRadius: 2
-                }}>
-                    {(messages[currentConv] || []).map((msg, index) => (
-                        <MessageBubble
-                            key={`${currentConv}-${index}`} // 🚩 复合key避免冲突[4](@ref)
-                            text={msg.text}
-                            isUser={msg.isUser}
-                            isLoading={msg.isLoading}
-                        />
-                    ))}
-                    <div ref={messagesEndRef} />
-                </Box>
+                            {!collapsed && "新建会话"}
+                        </Button>
+                    </div>
+                </Affix>
 
-                {/* 输入区域 */}
-                <Box
-                    component="form"
-                    onSubmit={handleSend}
-                    sx={{ display: 'flex', gap: 1 }}
-                >
-                    <TextField
-                        fullWidth
-                        variant="outlined"
-                        value={inputText}
-                        onChange={(e) => setInputText(e.target.value)}
-                        placeholder="输入消息..."
-                    />
-                    <Button
-                        variant="contained"
-                        type="submit"
-                        disabled={!inputText.trim()}
-                    >
-                        发送
-                    </Button>
-                </Box></Box>
-            <Box sx={{
-                flex: 4,       // 30%宽度
-                height: '100%',
-                borderRadius: 2,
-                overflow: 'hidden' // 隐藏地图溢出
-            }}>
-                <Map
-                    defaultCenter={{ lat: 40.0000, lng: 116.3264 }} // 清华主楼坐标[7](@ref)
-                    defaultZoom={15}
-                    gestureHandling="greedy"
-                    mapId="tsinghua-map"
-                    style={{ height: '100%' }}
-                >
-                </Map>
-            </Box>
-        </Box>
+                {/* 会话列表 */}
+                <Menu
+                    mode="inline"
+                    selectedKeys={[String(currentConv)]}
+                    onSelect={({ key }) => {
+                        setCurrentConv(key)
+                        console.log("当前会话ID:", key)
+                        console.log("当前ID的type", typeof key)
+                        console.log("allConvIds", allConvIds)
+                        console.log("allConvIds的type", typeof allConvIds[0])
+                        if (!messages[key]) {
+                            setMessages(prev => ({ ...prev, [key]: [] }))
+                        }
+
+                    }}
+                    items={allConvIds.map((convId, index) => ({
+                        key: convId,
+                        icon: <MessageOutlined />,
+                        label: `会话 ${index + 1}`,
+                        title: `ID: ${convId}`
+                    }))}
+                />
+            </Sider>
+
+            {/* 主内容区域 */}
+            <Layout>
+                <Content style={{
+                    display: 'flex',
+                    padding: 24,
+                    gap: 24,
+                    backgroundColor: '#f5f5f5'
+                }}>
+                    {/* 消息面板 */}
+                    <div style={{
+                        flex: 2,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 16
+                    }}>
+                        <div style={{
+                            flex: 1,
+                            overflow: 'auto',
+                            padding: 16,
+                            backgroundColor: '#fff',
+                            borderRadius: 8
+                        }}>
+                            {(messages[currentConv] || []).map((msg, index) => (
+                                <MessageBubble
+                                    key={`${currentConv}-${index}`}
+                                    text={msg.text}
+                                    isUser={msg.isUser}
+                                    isLoading={msg.isLoading}
+                                />
+                            ))}
+                            <div ref={messagesEndRef} />
+                        </div>
+
+                        {/* 输入区域 */}
+                        <Input.Search
+                            placeholder="输入消息..."
+                            enterButton="发送"
+                            size="large"
+                            value={inputText}
+                            onChange={(e) => setInputText(e.target.value)}
+                            onSearch={handleSend}
+                            allowClear
+                        />
+                    </div>
+
+                    {/* 地图面板 */}
+                    <div style={{ flex: 1, borderRadius: 8, overflow: 'hidden' }}>
+                        <Map
+                            defaultCenter={{ lat: 40.0000, lng: 116.3264 }}
+                            defaultZoom={15}
+                            gestureHandling="greedy"
+                            mapId="tsinghua-map"
+                            style={{ height: '100%' }}
+                        />
+                    </div>
+                </Content>
+            </Layout>
+        </Layout>
     )
 }
 

@@ -1,7 +1,7 @@
 import React from 'react'
 import { Routes, Route, BrowserRouter } from 'react-router-dom'
 import MainPage from './MainPage.jsx'
-import LoginPage from './LoginPage.jsx'
+import AuthCard from './LoginPage.jsx'
 import PostPage from './PostPage.jsx'
 import MainLayout from './MainLayout.jsx'
 import { Navigate } from 'react-router-dom'
@@ -12,7 +12,7 @@ function App () {
       <BrowserRouter>
         <Routes>
           {/* 独立路由（无布局） */}
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/login" element={<AuthCard />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
 
           {/* 需要布局的嵌套路由 */}
