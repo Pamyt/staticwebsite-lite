@@ -14,7 +14,7 @@ export default {
     proxy: {
       // Proxy API requests to the backend server
       '/api': {
-        target: 'https://djw3crnmuc.ap-southeast-2.awsapprunner.com', // Backend server URL
+        target: 'https://pryevz3dwx.ap-southeast-2.awsapprunner.com', // Backend server URL
         changeOrigin: true, // Change origin of the host header to the target URL
         rewrite: (path) => path.replace(/^\/api/, ''), // Remove /api prefix from the request path
       },
