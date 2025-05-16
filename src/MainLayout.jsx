@@ -23,9 +23,9 @@ function MainLayout () {
                 ref={nodeRef}
                 sx={{
                     position: 'fixed',
-                    left: (expanded || hovering) ? 20 : 10,
+                    left: (expanded || hovering) ? 20 : 7,
                     bottom: 20,
-                    width: (expanded || hovering) ? '8vw' : '3.5vw',
+                    width: (expanded || hovering) ? '8vw' : '3vw',
                     zIndex: 1000,
                     bgcolor: 'rgba(245,245,245,0.9)',
                     borderRadius: (expanded || hovering) ? 2 : '50%',
