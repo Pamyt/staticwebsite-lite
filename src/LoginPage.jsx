@@ -39,6 +39,8 @@ const AuthCard = ({ }) => {
             sessionStorage.setItem('userid', data.user_id)
             sessionStorage.setItem('username', values.username)
             window.location.href = '/mainpage'
+            message.success('登录成功！')
+            loginForm.resetFields()
         } catch (error) {
             setErrors({
                 form: error.response?.data?.message || '登录失败，请检查凭证'
@@ -56,6 +58,9 @@ const AuthCard = ({ }) => {
 
             setIsFlipped(false)
             setErrors({})
+            message.success('注册成功！请登录')
+            loginForm.setFieldsValue({ username: values.username, password: values.password })
+            registerForm.resetFields()
         } catch (error) {
             setErrors({
                 form: error.response?.data?.message || '注册失败，用户名可能已被使用'

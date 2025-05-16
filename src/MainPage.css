@@ -1,6 +1,103 @@
 .custom-card {
     .ant-card-body {
         padding: 10px !important;
+        margin: 0 !important;
         /* 按需调整 */
+    }
+}
+
+/* Markdown基础样式 */
+.markdown-container {
+    max-width: 100%;
+
+
+    .markdown-h1 {
+        font-size: 2.2em;
+        border-bottom: 2px solid #eee;
+        padding-bottom: 0.3em;
+        margin: 1.5em 0 1em;
+    }
+
+    .markdown-paragraph {
+        font-size: 1em;
+        margin: 0.01em;
+    }
+
+    .markdown-h2 {
+        font-size: 1.8em;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 0.3em;
+        margin: 1.3em 0 0.8em;
+    }
+
+    .markdown-h3 {
+        font-size: 1.4em;
+        margin: 1em 0 0.6em;
+    }
+
+    .markdown-list {
+        padding-left: 2em;
+        margin: 0.8em 0;
+
+        li {
+            margin: 0.4em 0;
+        }
+    }
+
+    .markdown-quote {
+        border-left: 4px solid #1890ff;
+        margin: 1em 0;
+        padding: 0 1em;
+        color: #666;
+        background: #f8f8f8;
+    }
+
+    .code-block {
+        position: relative;
+        margin: 1.5em 0;
+        border-radius: 6px;
+        overflow: hidden;
+
+        .code-language {
+            position: absolute;
+            right: 10px;
+            top: 5px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.8em;
+            z-index: 1;
+        }
+    }
+
+    .inline-code {
+        background: #f0f0f0;
+        padding: 0.2em 0.4em;
+        border-radius: 3px;
+        font-family: Menlo, monospace;
+    }
+
+    .markdown-link {
+        color: #1890ff;
+        text-decoration: underline;
+
+        &:hover {
+            color: #40a9ff;
+        }
+    }
+
+    .image-container {
+        margin: 1.5em 0;
+        text-align: center;
+
+        img {
+            max-width: 100%;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .image-caption {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 0.5em;
+        }
     }
 }

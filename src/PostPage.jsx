@@ -122,7 +122,7 @@ const PostPage = () => {
 
     // 布局结构
     return (
-        <div style={{ padding: 24, width: "80vw", backgroundColor: '#fff' }}>
+        <div style={{ padding: 24, width: "96vw", backgroundColor: '#fff' }}>
             {/* 头部导航 */}
             <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
                 <Col>
@@ -270,8 +270,8 @@ const PostPage = () => {
                         cover={
                             <img
                                 alt="travel-photo"
-                                src={selectedPost.coverImage || 'https://via.placeholder.com/800x300'}
-                                style={{ height: 200, objectFit: 'cover' }}
+                                src={selectedPost.coverImage || "https://img1.baidu.com/it/u=3031575495,2960930975&fm=253&fmt=auto&app=138&f=JPEG?w=750&h=500"}
+                                style={{ maxHeight: 300, objectFit: 'cover' }}
                             />
                         }
                         actions={[

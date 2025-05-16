@@ -28,7 +28,15 @@
     "react": "^18.2.0",
     "react-card-flip": "^1.2.3",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.30.0"
+    "react-draggable": "^4.4.6",
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^6.30.0",
+    "react-spring": "^10.0.0",
+    "react-syntax-highlighter": "^15.6.1",
+    "rehype-katex": "^7.0.1",
+    "rehype-raw": "^7.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",

@@ -4,12 +4,19 @@ import {
     Button,
     Input,
     Card,
-    Typography,
     Menu,
     Spin,
     Affix,
     Tooltip
 } from 'antd'
+import ReactMarkdown from 'react-markdown'
+import rehypeRaw from 'rehype-raw'
+import rehypeKatex from 'rehype-katex'
+import remarkMath from 'remark-math'
+import { Typography } from '@mui/material'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { materialDark } from 'react-syntax-highlighter/dist/cjs/styles/prism'
+import remarkGfm from 'remark-gfm'
 import {
     MenuUnfoldOutlined,
     MenuFoldOutlined,
@@ -24,7 +31,6 @@ import { postmessage, getallconvid, getcontentbyid } from './api'
 import './MainPage.css'
 
 const { Header, Sider, Content } = Layout
-const { Text } = Typography
 
 function MainPage () {
     // 状态管理
@@ -32,6 +38,7 @@ function MainPage () {
     const [messages, setMessages] = useState({})
     const [randomNumber, setRandomNumber] = useState(0)
     const [inputText, setInputText] = useState('')
+    const [messageToSend, setMessageToSend] = useState('')
     const navigate = useNavigate()
     const [allConvIds, setAllConvIds] = useState([])
     const [currentConv, setCurrentConv] = useState('')
@@ -40,7 +47,7 @@ function MainPage () {
 
     // 布局样式配置
     const layoutStyle = {
-        width: '90vw',
+        width: '100vw',
         height: '100vh',
         overflow: 'hidden'
     }
@@ -95,7 +102,7 @@ function MainPage () {
         scrollToBottom()
     }, [messages, currentConv])
 
-    const MAX_RETRIES = 5 // 最大重试次数
+    const MAX_RETRIES = 10 // 最大重试次数
 
     const handleSend = async (e) => {
         if (!inputText.trim()) return
@@ -111,11 +118,12 @@ function MainPage () {
         let retryCount = 0
         let success = false
         let finalResponse = null
-
+        setMessageToSend(inputText)
+        setInputText('')
         // 带重试机制的请求函数
         const sendWithRetry = async () => {
             try {
-                const response = await postmessage(inputText, userId, currentConv)
+                const response = await postmessage(messageToSend, userId, currentConv)
                 success = true
                 finalResponse = response
             } catch (error) {
@@ -132,7 +140,6 @@ function MainPage () {
 
         try {
             await sendWithRetry()
-            setInputText('')
             setMessages(prev => ({
                 ...prev,
                 [currentConv]: (prev[currentConv] || []).map(msg =>
@@ -144,55 +151,148 @@ function MainPage () {
                 )
             }))
         } catch (error) {
-            setMessages(prev =>
-                prev.map(msg =>
+            setMessages(prev => ({
+                ...prev,
+                [currentConv]: (prev[currentConv] || []).map(msg =>
                     msg.isLoading ? {
                         ...msg,
-                        text: `服务异常（已重试${MAX_RETRIES}次）`,
+                        text: '请求失败，请重试',
                         isLoading: false
                     } : msg
                 )
-            )
+            }))
             console.error('最终请求失败:', error)
         }
 
 
     }
     // 消息气泡组件
-    const MessageBubble = ({ text, isUser, isLoading }) => (
-        <div style={{
+    function removeMarkdownCodeBlocks (text) {
+        // 匹配所有代码块（含语言声明）
+        const regex = /```\s*\w*\n([\s\S]*?)```/g
+        return text.replace(regex, '$1')
+    }
+    const MessageBubble = ({ text, isUser, isLoading }) => {
+        const decodeUnicode = str =>
+            str.replace(/\\u([\dA-F]{4})/gi, (_, code) =>
+                String.fromCharCode(parseInt(code, 16))
+            )
+        console.log("解码后的内容:", decodeUnicode(text))
+        const cleanContent = removeMarkdownCodeBlocks(decodeUnicode(text)
+            .replace(/&gt;/g, '>')
+            .replace(/\\n/g, '\n')
+            .replace(/\\"/g, '"')
+            .replace(/‘/g, "'")
+            .replace(/（/g, '(')
+            .replace(/）/g, ')'))
+
+        // 增强型渲染组件
+        const components = {
+            h1: ({ children }) => <h1 className="markdown-h1">{children}</h1>,
+            h2: ({ children }) => <h2 className="markdown-h2">{children}</h2>,
+            h3: ({ children }) => <h3 className="markdown-h3">{children}</h3>,
+            ul: ({ children }) => <ul className="markdown-list">{children}</ul>,
+            ol: ({ children }) => <ol className="markdown-list">{children}</ol>,
+            p: ({ children }) => <p className="markdown-paragraph">{children}</p>,
+            blockquote: ({ children }) => (
+                <blockquote className="markdown-quote">{children}</blockquote>
+            ),
+            code ({ node, inline, className, children }) {
+                const match = /language-(\w+)/.exec(className || '')
+                return !inline && match ? (
+                    <div className="code-block">
+                        <div className="code-language">{match[1]}</div>
+                        <SyntaxHighlighter
+                            style={materialDark}
+                            language={match[1]}
+                            PreTag="div"
+                        >
+                            {String(children).replace(/\n$/, '')}
+                        </SyntaxHighlighter>
+                    </div>
+                ) : (
+                    <code className="inline-code">{children}</code>
+                )
+            },
+            a: ({ href, children }) => (
+                <a href={href} target="_blank" rel="noopener noreferrer" className="markdown-link">
+                    {children}
+                </a>
+            ),
+            img: ({ src, alt }) => (
+                <div className="image-container">
+                    <img src={src} alt={alt} />
+                    {alt && <div className="image-caption">{alt}</div>}
+                </div>
+            )
+        }
+        return <div style={{
             display: 'flex',
             justifyContent: isUser ? 'flex-end' : 'flex-start',
-        }}>
+        }
+        } >
             <Card
                 className="custom-card"
                 bordered={false}
                 style={{
-                    maxWidth: '70%',
+                    maxWidth: '80%',
                     backgroundColor: isUser ? '#1890ff' : '#f0f0f0',
                     marginTop: '15px',
                 }}
-                padding={1}
             >
                 <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 8,
                     color: isUser ? 'white' : 'rgba(0, 0, 0, 0.88)'
                 }}>
                     {isLoading ? (
-                        <Spin indicator={<span style={{ color: 'inherit' }}>...</span>} />
+                        <Typography
+                            sx={{
+                                animation: 'pulse 1.4s infinite',
+                                '@keyframes pulse': {
+                                    '0%, 100%': {
+                                        opacity: 0.5,
+                                        letterSpacing: '0.2em' // 初始间距
+                                    },
+                                    '50%': {
+                                        opacity: 1,
+                                        letterSpacing: '0.3em' // 动画峰值间距
+                                    }
+                                },
+                                marginLeft: '5px',
+                                fontSize: '28px',         // 放大字号[4,10](@ref)
+                                fontWeight: 700,         // 加粗字体[6](@ref)
+                                letterSpacing: '0.2em',   // 基准字符间距[9](@ref)
+                                display: 'inline-flex',   // 启用弹性布局
+                                gap: '0.2em'             // 增加元素间距
+                            }}
+                        >
+                            •••
+                        </Typography>
                     ) : (
                         <>
                             {!isUser && <RobotOutlined />}
-                            <Text style={{ margin: 0, color: isUser ? 'white' : 'black' }}>{text}</Text>
+                            <div className="markdown-container" style={{
+                                marginLeft: isUser ? '0' : '5px',
+                                marginTop: isUser ? '0' : '3px',
+                                marginBottom: isUser ? '0' : '3px',
+                            }}>
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={components}
+                                    rehypePlugins={[]}
+                                    skipHtml={true}
+                                >
+                                    {cleanContent}
+                                </ReactMarkdown>
+                            </div>
                             {isUser && <UserOutlined />}
                         </>
                     )}
                 </div>
-            </Card>
-        </div>
-    )
+            </Card >
+        </div >
+    }
 
     return (
         <Layout style={layoutStyle}>
@@ -223,6 +323,14 @@ function MainPage () {
                                     gap: 8,
                                     border: 'none',
                                     marginBottom: 18,
+                                    outline: 'none !important', // 强制覆盖所有状态
+                                    WebkitAppearance: 'none',   // 移除iOS/Safari默认样式
+                                    MozAppearance: 'none',      // 移除Firefox默认样式
+                                    // 针对Firefox特殊处理
+                                    '&::-moz-focus-inner': {
+                                        border: '0 !important',
+                                        padding: '0 !important'
+                                    }
                                 }}
                                 onClick={() => setCollapsed(!collapsed)}
                             >
