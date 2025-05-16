@@ -38,7 +38,6 @@ function MainPage () {
     const [messages, setMessages] = useState({})
     const [randomNumber, setRandomNumber] = useState(0)
     const [inputText, setInputText] = useState('')
-    const [messageToSend, setMessageToSend] = useState('')
     const navigate = useNavigate()
     const [allConvIds, setAllConvIds] = useState([])
     const [currentConv, setCurrentConv] = useState('')
@@ -118,12 +117,11 @@ function MainPage () {
         let retryCount = 0
         let success = false
         let finalResponse = null
-        setMessageToSend(inputText)
         setInputText('')
         // 带重试机制的请求函数
         const sendWithRetry = async () => {
             try {
-                const response = await postmessage(messageToSend, userId, currentConv)
+                const response = await postmessage(inputText, userId, currentConv)
                 success = true
                 finalResponse = response
             } catch (error) {
