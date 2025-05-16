@@ -31,6 +31,10 @@ function MainLayout () {
                     borderRadius: (expanded || hovering) ? 2 : '50%',
                     boxShadow: 4,
                     transition: 'all 0.3s ease',
+
+                    '& .MuiIconButton-root': {
+                        borderRadius: 'inherit'
+                    }
                 }}
                 onMouseEnter={() => !expanded && setHovering(true)}
                 onMouseLeave={() => !expanded && setHovering(false)}
@@ -39,8 +43,14 @@ function MainLayout () {
                     onClick={() => setExpanded(!expanded)}
                     sx={{
                         outline: 'none',
-                        display: 'block', mx: 'auto', transition: 'transform 0.3s',
-                        transform: `rotate(${rotation}deg)`, // 容器倾斜效果
+                        display: 'block',
+                        mx: 'auto',
+                        transition: 'transform 0.3s ',
+                        transform: `rotate(${rotation}deg)`,
+                        marginBottom: 0,
+                        position: 'relative',
+                        left: (expanded || hovering) ? 0 : '-2.1px',
+                        bottom: (expanded || hovering) ? 0 : '-3px',
                         borderRadius: (expanded || hovering) ? 2 : '50%',
                         '&:hover, &:active, &:focus': {
                             outline: 'none',
@@ -48,7 +58,6 @@ function MainLayout () {
                             boxShadow: 'none',
                             backgroundColor: 'transparent'
                         }
-
                     }}
                 >
                     {expanded ? <PushPin /> : <PushPinOutlined />}
