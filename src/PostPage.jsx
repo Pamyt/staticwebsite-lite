@@ -111,7 +111,7 @@ const PostPage = () => {
             post_owner_name: currentName,
             likes: 0,
             like_list: [],
-            timestamp: Date.now()
+            time_stamp: Date.now()
         }
         makepost(currentUser, values.title, values.content, values.location)
         setPosts([newPost, ...posts])
