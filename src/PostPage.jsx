@@ -206,6 +206,15 @@ const PostPage = () => {
                             title="确认清除草稿？"
                             onConfirm={() => form.resetFields()}
                             cancelText="取消"
+                            okButtonProps={{
+                                type: 'primary',         // 基础按钮类型[8](@ref)
+                                danger: true,            // 启用危险样式[8](@ref)
+                                style: {
+                                    backgroundColor: '#ff4d4f', // 红色背景[6](@ref)
+                                    borderColor: '#ff4d4f',      // 边框颜色同步
+                                    color: '#fff'                // 白色文字[6](@ref)
+                                }
+                            }}
                             okText="确认"
                             okType="danger"
                             placement="topLeft"
