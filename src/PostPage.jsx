@@ -205,6 +205,9 @@ const PostPage = () => {
                         <Popconfirm
                             title="确认清除草稿？"
                             onConfirm={() => form.resetFields()}
+                            cancelText="取消"
+                            okText="确认"
+                            okType="danger"
                             placement="topLeft"
                         >
                             <Button danger>清除草稿</Button>
