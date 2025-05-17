@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, use } from 'react'
 import {
     Layout,
     Button,
@@ -47,7 +47,7 @@ function MainPage () {
     // 布局样式配置
     const layoutStyle = {
         width: '100vw',
-        height: '100vh',
+        height: '98vh',
         overflow: 'hidden'
     }
     // 自动滚动到底部
@@ -66,13 +66,26 @@ function MainPage () {
                 allconvids = response.data.conversation_ids
                 setAllConvIds(allconvids)
             }
-            if (allconvids.length > 0) {
-                setCurrentConv(allconvids[0])
+            //console.log("当前会话ID:", currentConv)
+            if (currentConv === "") {
+
+                if (allconvids.length > 0) {
+                    setCurrentConv(allconvids[0])
+
+                }
+                else {
+                    setCurrentConv(randomNumber)
+                }
             }
-            else {
-                setCurrentConv(randomNumber)
+            const sharedConvId = sessionStorage.getItem('currentConv')
+           // console.log("当前会话ID:", sharedConvId)
+            //console.log("实际上的会话ID:", currentConv)
+            if (sharedConvId && currentConv === "") {
+                setCurrentConv(sharedConvId)
+                //console.log("找到了旧ID")
             }
-            console.log("所有会话ID:", allconvids)
+            //console.log("当前会话ID:", currentConv)
+            //console.log("所有会话ID:", allconvids)
             for (let i = 0; i < allconvids.length; i++) {
                 const convid = allconvids[i]
                 const response = getcontentbyid(userId, convid)
@@ -95,15 +108,34 @@ function MainPage () {
             }
         }
         initialize()
-    }
-        , [])
+
+    }, []
+    )
+    useEffect(() => {
+        const ifiscreate = sessionStorage.getItem('ifiscreate')
+        const newConvId = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
+        const initialize = async () => {
+            if (ifiscreate === 'true') {
+                //console.log("创建新会话")
+                setInputText(sessionStorage.getItem('inputText'))
+                await handleSend()
+                setAllConvIds(prev => [...prev, newConvId])
+                setCurrentConv(newConvId)
+                sessionStorage.setItem('currentConv', newConvId)
+                sessionStorage.removeItem('ifiscreate')
+                sessionStorage.removeItem('inputText')
+            }
+        }
+        initialize()
+    }, [])
     useEffect(() => {
         scrollToBottom()
     }, [messages, currentConv])
 
+
     const MAX_RETRIES = 10 // 最大重试次数
 
-    const handleSend = async (e) => {
+    const handleSend = async () => {
         if (!inputText.trim()) return
 
         // 添加用户消息和初始加载状态
@@ -118,6 +150,7 @@ function MainPage () {
         let success = false
         let finalResponse = null
         setInputText('')
+
         // 带重试机制的请求函数
         const sendWithRetry = async () => {
             try {
@@ -164,6 +197,16 @@ function MainPage () {
 
 
     }
+    const getLastUserMessage = (convId) => {
+        const messageList = messages[convId] || []
+        // 逆序查找最后一条用户消息[3,4](@ref)
+        for (let i = messageList.length - 1; i >= 0; i--) {
+            if (messageList[i].isUser) {
+                return messageList[i].text
+            }
+        }
+        return ''
+    }
     // 消息气泡组件
     function removeMarkdownCodeBlocks (text) {
         // 匹配所有代码块（含语言声明）
@@ -175,7 +218,6 @@ function MainPage () {
             str.replace(/\\u([\dA-F]{4})/gi, (_, code) =>
                 String.fromCharCode(parseInt(code, 16))
             )
-        console.log("解码后的内容:", decodeUnicode(text))
         const cleanContent = removeMarkdownCodeBlocks(decodeUnicode(text)
             .replace(/&gt;/g, '>')
             .replace(/\\n/g, '\n')
@@ -325,10 +367,6 @@ function MainPage () {
                                     WebkitAppearance: 'none',   // 移除iOS/Safari默认样式
                                     MozAppearance: 'none',      // 移除Firefox默认样式
                                     // 针对Firefox特殊处理
-                                    '&::-moz-focus-inner': {
-                                        border: '0 !important',
-                                        padding: '0 !important'
-                                    }
                                 }}
                                 onClick={() => setCollapsed(!collapsed)}
                             >
@@ -344,6 +382,7 @@ function MainPage () {
                                 const newConvId = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
                                 setAllConvIds(prev => [...prev, newConvId])
                                 setCurrentConv(newConvId)
+                                sessionStorage.setItem('currentConv', newConvId)
                             }}
                         >
                             {!collapsed && "新建会话"}
@@ -357,10 +396,7 @@ function MainPage () {
                     selectedKeys={[String(currentConv)]}
                     onSelect={({ key }) => {
                         setCurrentConv(key)
-                        console.log("当前会话ID:", key)
-                        console.log("当前ID的type", typeof key)
-                        console.log("allConvIds", allConvIds)
-                        console.log("allConvIds的type", typeof allConvIds[0])
+                        sessionStorage.setItem('currentConv', key)
                         if (!messages[key]) {
                             setMessages(prev => ({ ...prev, [key]: [] }))
                         }
@@ -369,7 +405,23 @@ function MainPage () {
                     items={allConvIds.map((convId, index) => ({
                         key: convId,
                         icon: <MessageOutlined />,
-                        label: `会话 ${index + 1}`,
+                        label: (
+                            <div style={{ lineHeight: 1.2 }}>
+                                <div style={{ fontWeight: 500 }}>会话 {index + 1}</div>
+                                <span style={{
+                                    fontSize: 10,
+                                    color: '#666',
+                                    display: 'inline-block',
+                                    width: '100%',
+                                    height: '1.2em',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
+                                }}>
+                                    {getLastUserMessage(convId)}
+                                </span>
+                            </div>
+                        ),
                         title: `ID: ${convId}`
                     }))}
                 />
@@ -415,7 +467,7 @@ function MainPage () {
                             size="large"
                             value={inputText}
                             onChange={(e) => setInputText(e.target.value)}
-                            onSearch={handleSend}
+                            onSearch={handleSend()}
                             allowClear
                         />
                     </div>

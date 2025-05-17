@@ -20,7 +20,9 @@ import {
     HeartFilled,
     HeartOutlined
 } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
 import { getallpost, makepost, likepost, dislikepost } from './api.js'
+import { getallconvid, getcontentbyid, postmessage } from './api.js'
 
 const { Title } = Typography
 const { Option } = Select
@@ -34,18 +36,43 @@ const PostPage = () => {
     const [detailModalVisible, setDetailModalVisible] = useState(false)
     const [selectedPost, setSelectedPost] = useState(null)
     const [sortBy, setSortBy] = useState('time')
+    const navigate = useNavigate()
     const currentUser = sessionStorage.getItem('userid')
     const currentName = sessionStorage.getItem('username')
+    const [randomNumber, setRandomNumber] = useState(0)
+    const [messages, setMessages] = useState({})
     useEffect(() => {
         const initializePosts = async () => {
-            const response = await getallpost()
+            setRandomNumber(Math.floor(101 + Math.random() * (Number.MAX_SAFE_INTEGER - 101)))
+            const response = await getallconvid(currentUser)
+            let allconvids = []
             if (response.status === 200) {
-                const data = response.data.posts.map(post => ({
+                allconvids = response.data.conversation_ids
+            }
+            //console.log("所有会话ID:", allconvids)
+            for (let i = 0; i < allconvids.length; i++) {
+                const convid = allconvids[i]
+                const response = getcontentbyid(currentUser, convid)
+                response.then(res => {
+                    if (res.status === 200) {
+                        setMessages(prev => ({
+                            ...prev,
+                            [convid]: res.data.messages[0].content
+                        }))
+                    } else {
+                        console.error('获取消息失败:', res.statusText)
+                    }
+                }).catch(error => {
+                    console.error('请求失败:', error)
+                })
+            }
+            const response2 = await getallpost()
+            if (response.status === 200) {
+                const data = response2.data.posts.map(post => ({
                     ...post,
                     likes: post.like_list.length
                 }))
                 setPosts(data)
-                console.log('获取笔记成功:', data)
             } else {
                 message.error('获取笔记失败，请稍后再试')
             }
@@ -54,8 +81,6 @@ const PostPage = () => {
     }, [])
     // 点赞功能组件
     const LikeButton = ({ post }) => {
-        console.log('当前用户:', currentName)
-        console.log('点赞列表:', post.like_list)
         const [liked, setLiked] = useState(post.like_list.includes(currentName))
         const [likeCount, setLikeCount] = useState(post.likes)
 
@@ -82,8 +107,6 @@ const PostPage = () => {
                     setSelectedPost({ ...selectedPost, likes: newCount, like_list: newLikeList })
                 }
             }
-            // 这里应调用API更新点赞状态
-            console.log('更新点赞状态:', post.post_id, newCount)
         }
 
         return (
@@ -119,10 +142,50 @@ const PostPage = () => {
         setPostModalVisible(false)
         form.resetFields()
     }
+    const handleTagClick = async (tag) => {
+        const query = "我想去" + tag + "旅行，请给我推荐一些旅行计划和建议。"
+        //console.log("查询内容:", query)
+        let found = false
+        Object.entries(messages).forEach(([key, value]) => {
+            if (value === query) {
+                sessionStorage.setItem('currentConv', String(key)) // 存储字典键名而非数组索引
+                //console.log("已有的会话ID:", key)
+                window.location.href = '/mainpage'
+                found = true
+                return
+            }
+        })
+        if (found) {
+            return
+        }
+        // console.log("没有找到已有会话，创建新会话")
+        // const newConvId = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
+        // let retryCount = 0
+        // const MAX_RETRIES = 10
+        // const sendWithRetry = async () => {
+        //     try {
+        //         const response = await postmessage(query, currentUser, newConvId)
+        //     } catch (error) {
+        //         if (retryCount < MAX_RETRIES) {
+        //             retryCount++
+        //             console.log(`第 ${retryCount} 次重试...`)
+        //             await new Promise(resolve => setTimeout(resolve, 1000)) // 1秒延迟[4](@ref)
+        //             return sendWithRetry()
+        //         } else {
+        //             throw error
+        //         }
+        //     }
+        // }
 
+        // await sendWithRetry()
+        // sessionStorage.setItem('currentConv', newConvId)
+        sessionStorage.setItem('ifiscreate', true)
+        sessionStorage.setItem('inputText', query)
+        navigate('/mainpage')
+    }
     // 布局结构
     return (
-        <div style={{ padding: 24, width: "96vw", backgroundColor: '#fff' }}>
+        <div style={{ padding: 24, height: '98vh', width: "96vw", backgroundColor: '#fff' }}>
             {/* 头部导航 */}
             <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
                 <Col>
@@ -172,7 +235,7 @@ const PostPage = () => {
                         <Card
                             hoverable
                             title={post.post_title}
-                            extra={<Tag color="blue">{post.travel_place}</Tag>}
+                            extra={<Tag color="blue" onClick={(e) => { e.stopPropagation(); handleTagClick(post.travel_place) }}>{post.travel_place}  </Tag>}
                             actions={[
                                 <LikeButton post={post} />,
                                 <span>作者：{post.post_owner_name}</span>
@@ -295,7 +358,7 @@ const PostPage = () => {
                     >
                         <Card.Meta
                             title={
-                                <Tag color="geekblue" style={{ fontSize: 14 }}>
+                                <Tag color="geekblue" style={{ fontSize: 14, cursor: "pointer" }} onClick={(e) => { e.stopPropagation(); handleTagClick(selectedPost.travel_place) }} cursor="pointer" >
                                     {selectedPost.travel_place}
                                 </Tag>
                             }
