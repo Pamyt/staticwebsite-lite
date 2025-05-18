@@ -22,7 +22,9 @@ function MainLayout () {
     const navigate = useNavigate()
     const location = useLocation()
     const isMobile = useMediaQuery('(max-width:600px)')
-
+    useEffect(() => {
+        console.log("location.pathname", location.pathname)
+    }, [])
     // 动态旋转处理
     useEffect(() => {
         setRotation(hovering || expanded ? 0 : 45)
