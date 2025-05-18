@@ -119,7 +119,6 @@ function MainPage () {
             }
             //console.log("创建新会话")
             setInputText(sessionStorage.getItem('inputText'))
-            setAllConvIds(prev => [...prev, newConvId])
             setCurrentConv(newConvId)
             //await handleSend
             sessionStorage.setItem('currentConv', newConvId)
