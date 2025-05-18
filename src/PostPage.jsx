@@ -43,6 +43,17 @@ const PostPage = () => {
     const [messages, setMessages] = useState({})
     useEffect(() => {
         const initializePosts = async () => {
+
+            const response2 = await getallpost()
+            if (response2.status === 200) {
+                const data = response2.data.posts.map(post => ({
+                    ...post,
+                    likes: post.like_list.length
+                }))
+                setPosts(data)
+            } else {
+                message.error('获取笔记失败，请稍后再试')
+            }
             setRandomNumber(Math.floor(101 + Math.random() * (Number.MAX_SAFE_INTEGER - 101)))
             const response = await getallconvid(currentUser)
             let allconvids = []
@@ -65,16 +76,6 @@ const PostPage = () => {
                 }).catch(error => {
                     console.error('请求失败:', error)
                 })
-            }
-            const response2 = await getallpost()
-            if (response.status === 200) {
-                const data = response2.data.posts.map(post => ({
-                    ...post,
-                    likes: post.like_list.length
-                }))
-                setPosts(data)
-            } else {
-                message.error('获取笔记失败，请稍后再试')
             }
         }
         initializePosts()

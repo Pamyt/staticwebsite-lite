@@ -29,6 +29,7 @@ import { useNavigate } from 'react-router-dom'
 import { APIProvider, Map } from '@vis.gl/react-google-maps'
 import { postmessage, getallconvid, getcontentbyid } from './api'
 import './MainPage.css'
+import { all } from 'axios'
 
 const { Header, Sider, Content } = Layout
 
@@ -43,7 +44,7 @@ function MainPage () {
     const [currentConv, setCurrentConv] = useState('')
     const messagesEndRef = useRef(null)
     const userId = sessionStorage.getItem('userid') || 0
-
+    const buttonRef = useRef(null)  // 创建 ref
     // 布局样式配置
     const layoutStyle = {
         width: '100vw',
@@ -107,35 +108,44 @@ function MainPage () {
                 })
             }
         }
-        initialize()
 
-    }, []
-    )
-    useEffect(() => {
+        initialize()
         const ifiscreate = sessionStorage.getItem('ifiscreate')
         const newConvId = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
-        const initialize = async () => {
-            if (ifiscreate === 'true') {
-                //console.log("创建新会话")
-                setInputText(sessionStorage.getItem('inputText'))
-                await handleSend()
-                setAllConvIds(prev => [...prev, newConvId])
-                setCurrentConv(newConvId)
-                sessionStorage.setItem('currentConv', newConvId)
-                sessionStorage.removeItem('ifiscreate')
-                sessionStorage.removeItem('inputText')
+
+        if (ifiscreate === 'true') {
+            if (buttonRef.current) {
+                buttonRef.current.click()
             }
+            //console.log("创建新会话")
+            setInputText(sessionStorage.getItem('inputText'))
+            setAllConvIds(prev => [...prev, newConvId])
+            setCurrentConv(newConvId)
+            //await handleSend
+            sessionStorage.setItem('currentConv', newConvId)
+            sessionStorage.removeItem('ifiscreate')
+            sessionStorage.removeItem('inputText')
+            console.log("currentConv", currentConv)
+            console.log("allconvids", allConvIds)
+            console.log("newConvId", newConvId)
         }
-        initialize()
-    }, [])
+    }, []
+    )
+
     useEffect(() => {
         scrollToBottom()
-    }, [messages, currentConv])
+    }, [messages[currentConv], currentConv])
 
 
     const MAX_RETRIES = 10 // 最大重试次数
 
     const handleSend = async () => {
+        console.log("当前会话ID:", currentConv)
+        console.log("所有会话ID:", allConvIds)
+        if (!allConvIds.includes(currentConv)) {
+            setAllConvIds(prev => [...prev, currentConv])
+            sessionStorage.setItem('currentConv', currentConv)
+        }
         if (!inputText.trim()) return
 
         // 添加用户消息和初始加载状态
@@ -216,7 +226,7 @@ function MainPage () {
     useEffect(() => {
         const selectedItem = document.querySelector(`[data-convid="${currentConv}"]`)
         selectedItem?.scrollIntoView({ behavior: 'smooth' })
-    }, [currentConv])
+    }, [currentConv, allConvIds])
     const MessageBubble = ({ text, isUser, isLoading }) => {
         const decodeUnicode = str =>
             str.replace(/\\u([\dA-F]{4})/gi, (_, code) =>
@@ -384,6 +394,7 @@ function MainPage () {
                             type="primary"
                             icon={<PlusOutlined />}
                             block
+                            ref={buttonRef}
                             onClick={() => {
                                 const newConvId = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
                                 setAllConvIds(prev => [...prev, newConvId])
