@@ -22,9 +22,7 @@ function MainLayout () {
     const navigate = useNavigate()
     const location = useLocation()
     const isMobile = useMediaQuery('(max-width:600px)')
-    useEffect(() => {
-        console.log("location.pathname", location.pathname)
-    }, [])
+
     // 动态旋转处理
     useEffect(() => {
         setRotation(hovering || expanded ? 0 : 45)
@@ -117,7 +115,7 @@ function MainLayout () {
                     <Outlet />
 
                     {/* 条件渲染底部提示 */}
-                    {location.pathname === '/mainpage' && (
+                    {(location.pathname === '/mainpage' || location.pathname === '/mainpage/') && (
                         <Box sx={{
                             position: 'absolute',
                             bottom: 0,
@@ -146,7 +144,7 @@ function MainLayout () {
                         </Box>
                     )}
 
-                    {location.pathname === '/postpage' && (
+                    {(location.pathname === '/postpage' || location.pathname === '/postpage/') && (
                         <Box sx={{
                             position: 'absolute',
                             bottom: 0,
