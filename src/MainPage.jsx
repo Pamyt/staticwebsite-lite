@@ -78,7 +78,7 @@ function MainPage () {
                 }
             }
             const sharedConvId = sessionStorage.getItem('currentConv')
-           // console.log("当前会话ID:", sharedConvId)
+            // console.log("当前会话ID:", sharedConvId)
             //console.log("实际上的会话ID:", currentConv)
             if (sharedConvId && currentConv === "") {
                 setCurrentConv(sharedConvId)
@@ -213,6 +213,10 @@ function MainPage () {
         const regex = /```\s*\w*\n([\s\S]*?)```/g
         return text.replace(regex, '$1')
     }
+    useEffect(() => {
+        const selectedItem = document.querySelector(`[data-convid="${currentConv}"]`)
+        selectedItem?.scrollIntoView({ behavior: 'smooth' })
+    }, [currentConv])
     const MessageBubble = ({ text, isUser, isLoading }) => {
         const decodeUnicode = str =>
             str.replace(/\\u([\dA-F]{4})/gi, (_, code) =>
@@ -266,6 +270,7 @@ function MainPage () {
                 </div>
             )
         }
+
         return <div style={{
             display: 'flex',
             justifyContent: isUser ? 'flex-end' : 'flex-start',
@@ -343,6 +348,7 @@ function MainPage () {
                 onCollapse={(value) => setCollapsed(value)}
                 trigger={null}
                 width={150}
+                overflow="auto"
                 collapsedWidth={55}
                 style={{
                     backgroundColor: '#fff',
@@ -389,7 +395,6 @@ function MainPage () {
                         </Button>
                     </div>
                 </Affix>
-
                 {/* 会话列表 */}
                 <Menu
                     mode="inline"
@@ -402,25 +407,32 @@ function MainPage () {
                         }
 
                     }}
+                    style={{
+                        overflow: 'auto',
+                        maxHeight: '79vh',
+                    }}
+                    overflow="auto"
+                    scroll={{ scrollToSelected: true }}
                     items={allConvIds.map((convId, index) => ({
                         key: convId,
                         icon: <MessageOutlined />,
                         label: (
-                            <div style={{ lineHeight: 1.2 }}>
-                                <div style={{ fontWeight: 500 }}>会话 {index + 1}</div>
-                                <span style={{
-                                    fontSize: 10,
-                                    color: '#666',
-                                    display: 'inline-block',
-                                    width: '100%',
-                                    height: '1.2em',
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis'
-                                }}>
-                                    {getLastUserMessage(convId)}
-                                </span>
-                            </div>
+                            <div data-convid={convId}>
+                                <div style={{ lineHeight: 1.2 }}>
+                                    <div style={{ fontWeight: 500 }}>会话 {index + 1}</div>
+                                    <span style={{
+                                        fontSize: 10,
+                                        color: '#666',
+                                        display: 'inline-block',
+                                        width: '100%',
+                                        height: '1.2em',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis'
+                                    }}>
+                                        {getLastUserMessage(convId)}
+                                    </span>
+                                </div></div>
                         ),
                         title: `ID: ${convId}`
                     }))}
@@ -467,7 +479,7 @@ function MainPage () {
                             size="large"
                             value={inputText}
                             onChange={(e) => setInputText(e.target.value)}
-                            onSearch={handleSend()}
+                            onSearch={handleSend}
                             allowClear
                         />
                     </div>
