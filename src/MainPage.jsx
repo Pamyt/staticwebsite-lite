@@ -418,7 +418,7 @@ function MainPage () {
                         icon: <MessageOutlined />,
                         label: (
                             <div data-convid={convId}>
-                                <div style={{ lineHeight: 1.2 }}>
+                                <div style={{ lineHeight: 1.2, zIndex: -1 }}>
                                     <div style={{ fontWeight: 500 }}>会话 {index + 1}</div>
                                     <span style={{
                                         fontSize: 10,
@@ -426,6 +426,7 @@ function MainPage () {
                                         display: 'inline-block',
                                         width: '100%',
                                         height: '1.2em',
+
                                         whiteSpace: 'nowrap',
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis'
