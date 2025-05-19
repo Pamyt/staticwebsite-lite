@@ -24,5 +24,6 @@ export default {
     outDir: 'dist', // Output directory for the build
     sourcemap: true, // Generate source maps for easier debugging
   },
+  reactStrictMode: false,
 
 }

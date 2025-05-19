@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, use } from 'react'
+import React, { useState, useEffect, useRef, use, useCallback } from 'react'
 import {
     Layout,
     Button,
@@ -26,12 +26,33 @@ import {
     PlusOutlined
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
-import { APIProvider, Map } from '@vis.gl/react-google-maps'
-import { postmessage, getallconvid, getcontentbyid } from './api'
+import { APIProvider, Map, Marker, Pin, AdvancedMarker } from '@vis.gl/react-google-maps'
+import { postmessage, getallconvid, getcontentbyid, getlocation } from './api'
 import './MainPage.css'
 import { all } from 'axios'
-
 const { Header, Sider, Content } = Layout
+const useMap = () => {
+    const [map, setMap] = useState(null)
+    const onLoad = useCallback(map => setMap(map), [])
+    const onUnmount = useCallback(() => setMap(null), [])
+    return { map, onLoad, onUnmount }
+}
+const PoiMarkers = (pois) => {
+    console.log("POI数据", pois.pois)
+    console.log("长度", pois.pois.length)
+    return (
+        <>
+            {pois.pois.length > 0 && (pois.pois.map((poi) => (
+                <AdvancedMarker
+                    key={poi.key}
+                    position={poi.location}
+                    title={poi.key}>
+                    <Pin background={'#FBBC04'} glyphColor={'#000'} borderColor={'#000'} />
+                </AdvancedMarker>
+            )))}
+        </>
+    )
+}
 
 function MainPage () {
     // 状态管理
@@ -44,6 +65,7 @@ function MainPage () {
     const [currentConv, setCurrentConv] = useState('')
     const messagesEndRef = useRef(null)
     const userId = sessionStorage.getItem('userid') || 0
+    const [locations, setLocation] = useState([])
     const buttonRef = useRef(null)  // 创建 ref
     // 布局样式配置
     const layoutStyle = {
@@ -141,7 +163,7 @@ function MainPage () {
     const handleSend = async () => {
         console.log("当前会话ID:", currentConv)
         console.log("所有会话ID:", allConvIds)
-        if (!allConvIds.includes(currentConv)) {
+        if (!allConvIds.includes(Number(currentConv))) {
             setAllConvIds(prev => [...prev, currentConv])
             sessionStorage.setItem('currentConv', currentConv)
         }
@@ -180,6 +202,22 @@ function MainPage () {
 
         try {
             await sendWithRetry()
+            const response = await getlocation(userId, currentConv)
+            if (response.status === 200) {
+                setLocation(response.data.llm_content.map((item) => {
+                    const [name, coords] = Object.entries(item)[0]
+                    console.log("坐标数据", coords)
+                    console.log("名称数据", name)
+                    return {
+                        key: name,
+                        location: {
+                            lat: Number(coords[1]),
+                            lng: Number(coords[0])
+                        }
+                    }
+                }))
+                console.log("设置完了", locations)
+            }
             setMessages(prev => ({
                 ...prev,
                 [currentConv]: (prev[currentConv] || []).map(msg =>
@@ -206,6 +244,34 @@ function MainPage () {
 
 
     }
+
+    // 在MainPage组件中添加：
+    const { map, onLoad, onUnmount } = useMap()
+    // 添加自适应效果
+    useEffect(() => {
+        if (!map || locations.length === 0) return
+
+        const bounds = new window.google.maps.LatLngBounds()
+        locations.forEach(loc => bounds.extend(loc.location))
+
+        // 带边距的自适应
+        map.fitBounds(bounds, {
+            top: 50,    // 上边距
+            right: 50,  // 右边距
+            bottom: 50, // 下边距
+            left: 50    // 左边距
+        })
+
+        // 设置最小缩放级别
+        const minZoom = 12
+        const listener = map.addListener('bounds_changed', () => {
+            if (map.getZoom() > minZoom) {
+                map.setZoom(minZoom)
+                listener.remove() // 移除监听防止循环
+            }
+        })
+    }, [map, locations])
+
     const getLastUserMessage = (convId) => {
         const messageList = messages[convId] || []
         // 逆序查找最后一条用户消息[3,4](@ref)
@@ -222,6 +288,7 @@ function MainPage () {
         const regex = /```\s*\w*\n([\s\S]*?)```/g
         return text.replace(regex, '$1')
     }
+
     useEffect(() => {
         const selectedItem = document.querySelector(`[data-convid="${currentConv}"]`)
         selectedItem?.scrollIntoView({ behavior: 'smooth' })
@@ -496,18 +563,21 @@ function MainPage () {
                     </div>
 
                     {/* 地图面板 */}
-                    <div style={{ flex: 1, borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ flex: 1, borderRadius: 8 }}>
                         <Map
-                            defaultCenter={{ lat: 40.0000, lng: 116.3264 }}
                             defaultZoom={15}
                             gestureHandling="greedy"
                             mapId="tsinghua-map"
-                            style={{ height: '100%' }}
-                        />
+                            defaultCenter={{ lat: -33.860664, lng: 151.208138 }}
+                            onLoad={onLoad}
+                            onUnmount={onUnmount}
+                            style={{ height: '100%' }}>
+                            <PoiMarkers pois={locations} />
+                        </Map>
                     </div>
                 </Content>
             </Layout>
-        </Layout>
+        </Layout >
     )
 }
 
