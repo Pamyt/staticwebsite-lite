@@ -8,7 +8,7 @@ import { Navigate } from 'react-router-dom'
 import { APIProvider } from '@vis.gl/react-google-maps'
 function App () {
   return (
-    <APIProvider apiKey={'AIzaSyD8kz0EW1KKo8B3I8GU7nAy19R8S6X6RVE'}>
+    
       <BrowserRouter>
         <Routes>
           {/* 独立路由（无布局） */}
@@ -22,7 +22,6 @@ function App () {
           </Route>
         </Routes>
       </BrowserRouter>
-    </APIProvider>
   )
 }
 

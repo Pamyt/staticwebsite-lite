@@ -26,20 +26,16 @@ import {
     PlusOutlined
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
-import { APIProvider, Map, Marker, Pin, AdvancedMarker } from '@vis.gl/react-google-maps'
+import { APIProvider, Map, Marker, Pin, AdvancedMarker, useMap } from '@vis.gl/react-google-maps'
 import { postmessage, getallconvid, getcontentbyid, getlocation } from './api'
 import './MainPage.css'
 import { all } from 'axios'
 const { Header, Sider, Content } = Layout
-const useMap = () => {
-    const [map, setMap] = useState(null)
-    const onLoad = useCallback(map => setMap(map), [])
-    const onUnmount = useCallback(() => setMap(null), [])
-    return { map, onLoad, onUnmount }
-}
+
+
 const PoiMarkers = (pois) => {
-    console.log("POI数据", pois.pois)
-    console.log("长度", pois.pois.length)
+    console.log("POI数据:", pois.pois)
+    console.log("POI数据长度:", pois.pois.length)
     return (
         <>
             {pois.pois.length > 0 && (pois.pois.map((poi) => (
@@ -47,11 +43,46 @@ const PoiMarkers = (pois) => {
                     key={poi.key}
                     position={poi.location}
                     title={poi.key}>
+
                     <Pin background={'#FBBC04'} glyphColor={'#000'} borderColor={'#000'} />
+                    <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/pin_drop/default/48px.svg" />
                 </AdvancedMarker>
             )))}
         </>
     )
+}
+
+const MapComponent = ({ locations }) => {
+    const map = useMap()
+
+    // 边界计算函数
+    const calculateBounds = locations => {
+        const bounds = new window.google.maps.LatLngBounds()
+        locations.forEach(loc => bounds.extend(loc.location))
+        return bounds
+    }
+    console.log("地图数据:", locations)
+    console.log("地图", map)
+    // 自适应逻辑
+    useEffect(() => {
+
+        if (map && locations.length !== 0) {
+
+            const bounds = calculateBounds(locations)
+            console.log("地图", map)
+
+            map.fitBounds(bounds, {
+                top: 20,
+                right: 20,
+                bottom: 20,
+                left: 20
+            })
+            console.log("地图边界:", bounds)
+        }
+    }, [map, locations])
+    // 限制最小缩放级别
+
+
 }
 
 function MainPage () {
@@ -132,6 +163,11 @@ function MainPage () {
         }
 
         initialize()
+        const locations = sessionStorage.getItem('locations')
+        if (locations) {
+            const parsedLocations = JSON.parse(locations)
+            setLocation(parsedLocations)
+        }
         const ifiscreate = sessionStorage.getItem('ifiscreate')
         const newConvId = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
 
@@ -158,7 +194,6 @@ function MainPage () {
     }, [messages[currentConv], currentConv])
 
 
-    const MAX_RETRIES = 10 // 最大重试次数
 
     const handleSend = async () => {
         console.log("当前会话ID:", currentConv)
@@ -177,57 +212,95 @@ function MainPage () {
                 { text: '', isUser: false, isLoading: true }])
         }))
 
-        let retryCount = 0
-        let success = false
-        let finalResponse = null
-        setInputText('')
 
-        // 带重试机制的请求函数
-        const sendWithRetry = async () => {
-            try {
-                const response = await postmessage(inputText, userId, currentConv)
-                success = true
-                finalResponse = response
-            } catch (error) {
-                if (retryCount < MAX_RETRIES) {
-                    retryCount++
-                    console.log(`第 ${retryCount} 次重试...`)
-                    await new Promise(resolve => setTimeout(resolve, 1000)) // 1秒延迟[4](@ref)
-                    return sendWithRetry()
-                } else {
-                    throw error
-                }
+        setInputText('')
+        const processStream = async (reader) => {
+            const decoder = new TextDecoder()
+            let result = ''
+            while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+
+                // 处理数据分块
+                const chunk = decoder.decode(value, { stream: true })
+                console.log("分块数据:", chunk)
+                const lines = chunk.split('\n').filter(line => line.startsWith('data: '))
+                console.log("分块数据行:", lines)
+
+                // 2. 解析JSON并拼接目标chunk
+
+                lines.forEach(line => {
+                    try {
+                        const jsonStr = line.replace('data: ', '')
+                        const data = JSON.parse(jsonStr)
+                        console.log("解析数据:", data)
+                        if (data.type === 'llm_chunk') {
+                            result += data.chunk
+                        }
+                    } catch (e) {
+                        console.error('解析失败:', e)
+                    }
+                })
+                console.log("拼接数据:", result)
+                // 更新消息状态
+                setMessages(prev => {
+                    const messages = prev[currentConv] || []
+
+                    const newMessages = [...messages]
+                    if (newMessages.length > 0) {
+                        const lastIndex = newMessages.length - 1  // 获取最后一条的索引[1,3,7](@ref)
+                        newMessages[lastIndex] = {                // 直接通过索引修改
+                            ...newMessages[lastIndex],              // 保留原有属性
+                            text: result,
+                            isLoading: false
+                        }
+                    }
+
+                    return { ...prev, [currentConv]: newMessages }
+                })
             }
         }
 
         try {
-            await sendWithRetry()
-            const response = await getlocation(userId, currentConv)
-            if (response.status === 200) {
-                setLocation(response.data.llm_content.map((item) => {
-                    const [name, coords] = Object.entries(item)[0]
-                    console.log("坐标数据", coords)
-                    console.log("名称数据", name)
+            // 使用Fetch API发起流式请求
+            const response = await fetch('https://pryevz3dwx.ap-southeast-2.awsapprunner.com/llm_talk', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    query: inputText,
+                    user_id: Number(userId),
+                    conversation_id: String(currentConv)
+                })
+            })
+
+            if (!response.ok) throw new Error('请求失败')
+
+            const reader = response.body.getReader()
+            await processStream(reader)
+
+            // 获取最终位置数据（保持原有逻辑）
+            const locationResponse = await getlocation(userId, currentConv)
+            if (locationResponse.status === 200) {
+                const locationcontent = locationResponse.data.llm_content
+
+                const transformed = locationcontent.map(item => {
+                    const [key] = Object.keys(item)
+                    const [lng, lat] = item[key]
+
                     return {
-                        key: name,
+                        key,
                         location: {
-                            lat: Number(coords[1]),
-                            lng: Number(coords[0])
+                            lat: Number(lat.toFixed(6)),
+                            lng: Number(lng.toFixed(6))
                         }
                     }
-                }))
-                console.log("设置完了", locations)
+                })
+
+                setLocation(transformed)
+                sessionStorage.setItem('locations', JSON.stringify(transformed))
             }
-            setMessages(prev => ({
-                ...prev,
-                [currentConv]: (prev[currentConv] || []).map(msg =>
-                    msg.isLoading ? {
-                        ...msg,
-                        text: success ? finalResponse.data.llm_content : '请求失败，请重试',
-                        isLoading: false
-                    } : msg
-                )
-            }))
         } catch (error) {
             setMessages(prev => ({
                 ...prev,
@@ -245,32 +318,6 @@ function MainPage () {
 
     }
 
-    // 在MainPage组件中添加：
-    const { map, onLoad, onUnmount } = useMap()
-    // 添加自适应效果
-    useEffect(() => {
-        if (!map || locations.length === 0) return
-
-        const bounds = new window.google.maps.LatLngBounds()
-        locations.forEach(loc => bounds.extend(loc.location))
-
-        // 带边距的自适应
-        map.fitBounds(bounds, {
-            top: 50,    // 上边距
-            right: 50,  // 右边距
-            bottom: 50, // 下边距
-            left: 50    // 左边距
-        })
-
-        // 设置最小缩放级别
-        const minZoom = 12
-        const listener = map.addListener('bounds_changed', () => {
-            if (map.getZoom() > minZoom) {
-                map.setZoom(minZoom)
-                listener.remove() // 移除监听防止循环
-            }
-        })
-    }, [map, locations])
 
     const getLastUserMessage = (convId) => {
         const messageList = messages[convId] || []
@@ -288,6 +335,7 @@ function MainPage () {
         const regex = /```\s*\w*\n([\s\S]*?)```/g
         return text.replace(regex, '$1')
     }
+
 
     useEffect(() => {
         const selectedItem = document.querySelector(`[data-convid="${currentConv}"]`)
@@ -564,16 +612,17 @@ function MainPage () {
 
                     {/* 地图面板 */}
                     <div style={{ flex: 1, borderRadius: 8 }}>
-                        <Map
-                            defaultZoom={15}
-                            gestureHandling="greedy"
-                            mapId="tsinghua-map"
-                            defaultCenter={{ lat: -33.860664, lng: 151.208138 }}
-                            onLoad={onLoad}
-                            onUnmount={onUnmount}
-                            style={{ height: '100%' }}>
-                            <PoiMarkers pois={locations} />
-                        </Map>
+                        <APIProvider apiKey={'AIzaSyD8kz0EW1KKo8B3I8GU7nAy19R8S6X6RVE'}>
+                            <Map
+                                mapId={'tsinghua-map'}
+                                defaultZoom={10}
+                                gestureHandling="greedy"
+                                defaultCenter={{ lat: 39.9042, lng: 116.4074 }} // 北京
+                                style={{ height: '100%', width: '100%' }}>
+                                <PoiMarkers pois={locations} />
+                                <MapComponent locations={locations} />
+                            </Map>
+                        </APIProvider>
                     </div>
                 </Content>
             </Layout>
