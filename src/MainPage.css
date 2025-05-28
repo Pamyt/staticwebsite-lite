@@ -101,3 +101,30 @@
         }
     }
 }
+
+.custom-dropdown-menu .ant-dropdown-menu-item {
+    padding: 12px 16px;
+    transition: background 0.2s;
+
+    &:hover {
+        background: #f5f7fa;
+        transform: translateX(4px);
+    }
+
+    &::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        height: 60%;
+        width: 2px;
+        background: #1890ff;
+        transform: translateY(-50%);
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    &:hover::after {
+        opacity: 1;
+    }
+}

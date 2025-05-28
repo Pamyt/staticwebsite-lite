@@ -1,13 +1,25 @@
 import axios from "axios";
 
 const TIMEOUT = 1000000;
-const API_BASE_URL = "https://pryevz3dwx.ap-southeast-2.awsapprunner.com";
+export const API_BASE_URL = "https://pryevz3dwx.ap-southeast-2.awsapprunner.com";
 
 export function postmessage(message: string, userid: number, conversation_id: number) {
     return axios.post(`${API_BASE_URL}/llm_talk`, {
         query: message,
         user_id: Number(userid),
         conversation_id: String(conversation_id)
+    }, {
+        timeout: TIMEOUT
+    });
+}
+export function postdeepsearch(userid: number, conversation_id: number, destination: string, budget: string, dates: string, preferences: string) {
+    return axios.post(`${API_BASE_URL}/answer_deepsearch`, {
+        user_id: Number(userid),
+        conversationid: String(conversation_id),
+        destination,
+        budget,
+        dates,
+        preferences
     }, {
         timeout: TIMEOUT
     });
@@ -40,6 +52,14 @@ export function getallconvid(userid: number) {
     return axios.post(`${API_BASE_URL}/get_user_conversation_ids`, {
         user_id: userid
     }, {
+        timeout: TIMEOUT
+    });
+}
+export function getdsconvid(userid: number) {
+    return axios.get(`${API_BASE_URL}/get_deepsearch_conversation_ids_by_user?user_id=${userid}`, { timeout: TIMEOUT });
+}
+export function getdscontentbyid(userid: number, conversation_id: number) {
+    return axios.get(`${API_BASE_URL}/get_deepsearch_conversation_by_id?conversationid=${conversation_id}`, {
         timeout: TIMEOUT
     });
 }
