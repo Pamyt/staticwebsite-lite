@@ -63,10 +63,10 @@ const PoiMarkers = (pois) => {
         </>
     )
 }
-
+let geocoder = null
 const MapComponent = ({ locations }) => {
     const map = useMap()
-
+    geocoder = new window.google.maps.Geocoder()
     // 边界计算函数
     const calculateBounds = locations => {
         const bounds = new window.google.maps.LatLngBounds()
@@ -105,6 +105,7 @@ function MainPage () {
     const [isDeepSearch, setIsDeepSearch] = useState({})
     const [messages, setMessages] = useState({})
     const [randomNumber, setRandomNumber] = useState(0)
+    const [currentLocation, setCurrentLocation] = useState(null)
     const [inputText, setInputText] = useState('')
     const navigate = useNavigate()
     const [allConvIds, setAllConvIds] = useState([])
@@ -124,116 +125,6 @@ function MainPage () {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
     }
     useEffect(() => {
-        // const initialize = async () => {
-        //     setRandomNumber(Math.floor(101 + Math.random() * (Number.MAX_SAFE_INTEGER - 101)))
-        //     if (!sessionStorage.getItem('userid'))
-        //         navigate('/login')
-
-        //     const response = await getallconvid(userId)
-        //     let allconvids = []
-        //     if (response.status === 200) {
-        //         allconvids = response.data.conversation_ids
-        //         setAllConvIds(allconvids)
-        //         allconvids.forEach(id => {
-        //             setIsDeepSearch(prev => ({
-        //                 ...prev,
-        //                 [id]: 0 // 默认值为0
-        //             }))
-        //         })
-        //     }
-        //     //console.log("当前会话ID:", currentConv)
-        //     if (currentConv === "") {
-
-        //         if (allconvids.length > 0) {
-        //             setCurrentConv(allconvids[0])
-
-        //         }
-        //         else {
-        //             setCurrentConv(randomNumber)
-        //         }
-        //     }
-        //     const sharedConvId = sessionStorage.getItem('currentConv')
-        //     // console.log("当前会话ID:", sharedConvId)
-        //     //console.log("实际上的会话ID:", currentConv)
-        //     if (sharedConvId && currentConv === "") {
-        //         setCurrentConv(sharedConvId)
-        //         //console.log("找到了旧ID")
-        //     }
-        //     //console.log("当前会话ID:", currentConv)
-        //     //console.log("所有会话ID:", allconvids)
-        //     for (let i = 0; i < allconvids.length; i++) {
-        //         const convid = allconvids[i]
-        //         const response = getcontentbyid(userId, convid)
-        //         response.then(res => {
-        //             if (res.status === 200) {
-        //                 setMessages(prev => ({
-        //                     ...prev,
-        //                     [convid]: res.data.messages.map(msg => ({
-        //                         text: msg.content,
-        //                         isUser: msg.role === 'user',
-        //                         isLoading: false,
-        //                         isDeep: false // 默认值为false
-        //                     }))
-        //                 }))
-        //             } else {
-        //                 console.error('获取消息失败:', res.statusText)
-        //             }
-        //         }).catch(error => {
-        //             console.error('请求失败:', error)
-        //         })
-        //     }
-        // }
-        // const initialize_deepsearch = async () => {
-        //     if (!sessionStorage.getItem('userid'))
-        //         navigate('/login')
-
-        //     const response = await getdsconvid(userId)
-        //     let allconvids = []
-        //     if (response.status === 200) {
-        //         allconvids = response.data.conversation_ids
-        //         setAllConvIds(...allConvIds, allconvids)
-        //         allconvids.forEach(id => {
-        //             setIsDeepSearch(prev => ({
-        //                 ...prev,
-        //                 [id]: 1 // 默认值为1
-        //             }))
-        //         }
-        //         )
-        //     }
-
-        //     //console.log("当前会话ID:", currentConv)
-        //     //console.log("所有会话ID:", allconvids)
-        //     for (let i = 0; i < allconvids.length; i++) {
-        //         const convid = allconvids[i]
-        //         const response = getdscontentbyid(convid)
-        //         response.then(res => {
-        //             if (res.status === 200) {
-        //                 setMessages(prev => ({
-        //                     ...prev,
-        //                     [convid]: [{
-        //                         destination: res.data.destination,
-        //                         budget: res.data.budget,
-        //                         date: res.data.dates,
-        //                         preference: res.data.preferences,
-        //                         isUser: true,
-        //                         isLoading: false,
-        //                         isDeep: true
-        //                     }, {
-        //                         tool_results: res.data.tool_results,
-        //                         agent_results: res.data.agent_results,
-        //                         isUser: false,
-        //                         isLoading: false,
-        //                         isDeep: true
-        //                     }]
-        //                 }))
-        //             } else {
-        //                 console.error('获取消息失败:', res.statusText)
-        //             }
-        //         }).catch(error => {
-        //             console.error('请求失败:', error)
-        //         })
-        //     }
-        // }
         const initializeAllConvs = async () => {
             try {
                 // 1. 公共前置逻辑
@@ -317,6 +208,14 @@ function MainPage () {
         //initialize()
         //initialize_deepsearch()
         initializeAllConvs()
+        navigator.geolocation.getCurrentPosition(
+            position => {
+                const { latitude, longitude } = position.coords
+                // 调用第三方地图API获取名称
+                getAddressName(latitude, longitude)
+            },
+            error => console.error("定位失败:", error)
+        )
         const locations = sessionStorage.getItem('locations')
         if (locations) {
             const parsedLocations = JSON.parse(locations)
@@ -340,6 +239,36 @@ function MainPage () {
         console.log("messages:", messages)
     }, []
     )
+    // 使用示例
+
+    // 输出：中国北京市海淀区蓝旗营清华路
+    function getAddressName (lat, lng) {
+        const latlng = { lat: parseFloat(lat), lng: parseFloat(lng) }
+
+        geocoder.geocode({ location: latlng, language: 'en' }, (results, status) => {
+            if (status === "OK") {
+                if (results[0]) {
+                    // 解析结构化地址组件
+                    const addressComponents = results[0].address_components
+                    let city = "", state = ""
+
+                    addressComponents.forEach(component => {
+                        if (component.types.includes("locality")) {
+                            city = component.long_name
+                        }
+                        if (component.types.includes("administrative_area_level_1")) {
+                            state = component.short_name
+                        }
+                    })
+                    console.log("地址", results[0])
+                    console.log(`城市: ${city}, 州省: ${state}`)
+                    setCurrentLocation(state)
+                }
+            } else {
+                console.error("逆地理编码失败:", status)
+            }
+        })
+    }
     const handleCreateConv = (type) => {
         const newConvId = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
 
@@ -510,8 +439,6 @@ function MainPage () {
                     },
                     { text: '', isUser: false, isLoading: true, isDeep: true }])
             }))
-            console.log("深度搜索输入:", deepSearchInputs)
-            console.log("当前messages:", messages)
 
             setDeepSearchInputs({
                 destination: '',
@@ -519,7 +446,7 @@ function MainPage () {
                 date: '',
                 preference: ''
             })
-            const response = await postdeepsearch(userId, currentConv, deepSearchInputs.destination, deepSearchInputs.budget, deepSearchInputs.date, deepSearchInputs.preference)
+            const response = await postdeepsearch(userId, currentConv, deepSearchInputs.destination, deepSearchInputs.budget, deepSearchInputs.date, deepSearchInputs.preference, currentLocation)
             if (response.status === 200) {
                 const data = response.data
                 setMessages(prev => ({
@@ -536,16 +463,6 @@ function MainPage () {
     }
 
     const MessageBubble = ({ text, destination, budget, date, preference, tool_results, agent_results, isUser, isLoading, isDeep }) => {
-        console.log("text:", text)
-        console.log("destination:", destination)
-        console.log("budget:", budget)
-        console.log("date:", date)
-        console.log("preference:", preference)
-        console.log("tool_results:", tool_results)
-        console.log("agent_results:", agent_results)
-        console.log("isUser:", isUser)
-        console.log("isLoading:", isLoading)
-        console.log("isDeep:", isDeep)
         const components = {
             h1: ({ children }) => <h1 className="markdown-h1">{children}</h1>,
             h2: ({ children }) => <h2 className="markdown-h2">{children}</h2>,
@@ -591,7 +508,6 @@ function MainPage () {
             )
 
         const cleanContent = ({ text }) => {
-            console.log("cleanContent:", text)
             return removeMarkdownCodeBlocks(decodeUnicode(text)
                 .replace(/&gt;/g, '>')
                 .replace(/\\n/g, '\n')
@@ -1141,16 +1057,37 @@ function MainPage () {
                         {/* 输入区域 */}
                         {/* 输入区域 */}
                         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                            <Switch
-                                checked={!!isDeepSearch[currentConv]}
-                                checkedChildren="深度搜索"
-                                disable
-                                unCheckedChildren="普通搜索"
-                                style={{
-                                    opacity: 0.8,
-                                    cursor: 'not-allowed',
-                                }}
-                            />
+                            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                                {isDeepSearch[currentConv] ? (
+                                    // 深度搜索状态
+                                    <div style={{
+                                        background: '#1890ff',
+                                        borderRadius: 8,
+                                        padding: '8px 12px',
+                                        color: 'white',
+                                        alignContent: 'center',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gridTemplateColumns: '1fr auto',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                    }}>
+                                        <div>深度搜索</div>
+                                        <div style={{ fontSize: 12, opacity: 0.8 }}>已启用联网增强模式</div>
+                                    </div>
+                                ) : (
+                                    // 普通搜索状态
+                                    <div style={{
+                                        background: '#f5f5f5',
+                                        borderRadius: 8,
+                                        padding: '8px 12px',
+                                        color: 'rgba(0,0,0,0.65)',
+                                        border: '1px solid #d9d9d9',
+                                    }}>
+                                        普通搜索
+                                    </div>
+                                )}
+                            </div>
 
                             {isDeepSearch[currentConv] ? (
                                 <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>

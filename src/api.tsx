@@ -12,14 +12,15 @@ export function postmessage(message: string, userid: number, conversation_id: nu
         timeout: TIMEOUT
     });
 }
-export function postdeepsearch(userid: number, conversation_id: number, destination: string, budget: string, dates: string, preferences: string) {
+export function postdeepsearch(userid: number, conversation_id: number, destination: string, budget: string, dates: string, preferences: string, currentLocation: string) {
     return axios.post(`${API_BASE_URL}/answer_deepsearch`, {
         user_id: Number(userid),
         conversationid: String(conversation_id),
         destination,
         budget,
         dates,
-        preferences
+        preferences,
+        startpoint: currentLocation
     }, {
         timeout: TIMEOUT
     });
