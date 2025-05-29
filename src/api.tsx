@@ -33,6 +33,14 @@ export function getlocation(userid: number, conversation_id: number) {
         timeout: TIMEOUT
     });
 }
+export function getlocationdeepsearch(userid: number, conversation_id: number) {
+    return axios.post(`${API_BASE_URL}/show_lattest_deepsearch_longtitude_latitude`, {
+        user_id: Number(userid),
+        conversation_id: String(conversation_id)
+    }, {
+        timeout: TIMEOUT
+    });
+}
 export function login(username: string, password: string) {
     return axios.post(`${API_BASE_URL}/user_login`, {
         name: username,

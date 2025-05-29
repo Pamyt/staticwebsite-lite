@@ -37,7 +37,7 @@ import {
 import { InfoWindow } from '@vis.gl/react-google-maps'
 import { useNavigate } from 'react-router-dom'
 import { APIProvider, Map, Marker, Pin, AdvancedMarker, useMap } from '@vis.gl/react-google-maps'
-import { postdeepsearch, getallconvid, getdsconvid, getdscontentbyid, getcontentbyid, getlocation, API_BASE_URL } from './api'
+import { postdeepsearch, getallconvid, getdsconvid, getdscontentbyid, getcontentbyid, getlocation, getlocationdeepsearch, API_BASE_URL } from './api'
 import './MainPage.css'
 const { Header, Sider, Content } = Layout
 
@@ -455,6 +455,26 @@ function MainPage () {
                         msg.isLoading ? { ...msg, tool_results: data.tool_results, agent_results: data.agent_results, isLoading: false, isDeep: true } : msg
                     )
                 }))
+                const locationResponse = await getlocationdeepsearch(userId, currentConv)
+                if (locationResponse.status === 200) {
+                    const locationcontent = locationResponse.data.llm_content
+
+                    const transformed = locationcontent.map(item => {
+                        const [key] = Object.keys(item)
+                        const [lng, lat] = item[key]
+
+                        return {
+                            key,
+                            location: {
+                                lat: Number(lat.toFixed(6)),
+                                lng: Number(lng.toFixed(6))
+                            }
+                        }
+                    })
+
+                    setLocation(transformed)
+                    sessionStorage.setItem('locations', JSON.stringify(transformed))
+                }
             } else {
                 console.error('深度搜索请求失败:', response.statusText)
             }
