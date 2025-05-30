@@ -24,6 +24,7 @@
     "antd": "^5.25.1",
     "axios": "^1.9.0",
     "framer-motion": "^12.11.3",
+    "moment": "^2.30.1",
     "nginx": "^1.1.0",
     "react": "^18.2.0",
     "react-card-flip": "^1.2.3",

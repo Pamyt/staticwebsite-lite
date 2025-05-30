@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, use } from 'react'
 import {
     Layout,
     Button,
@@ -13,8 +13,10 @@ import {
     Affix,
     Dropdown,
     Tooltip,
-    Modal
+    Modal,
+    DatePicker
 } from 'antd'
+import moment from 'moment'
 import ReactMarkdown from 'react-markdown'
 import { Typography } from '@mui/material'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
@@ -36,10 +38,13 @@ import {
 } from '@ant-design/icons'
 import { InfoWindow } from '@vis.gl/react-google-maps'
 import { useNavigate } from 'react-router-dom'
+import { flushSync } from 'react-dom'
 import { APIProvider, Map, Marker, Pin, AdvancedMarker, useMap } from '@vis.gl/react-google-maps'
 import { postdeepsearch, getallconvid, getdsconvid, getdscontentbyid, getcontentbyid, getlocation, getlocationdeepsearch, API_BASE_URL } from './api'
 import './MainPage.css'
 const { Header, Sider, Content } = Layout
+
+
 
 
 const PoiMarkers = (pois) => {
@@ -108,6 +113,7 @@ function MainPage () {
     const [currentLocation, setCurrentLocation] = useState(null)
     const [inputText, setInputText] = useState('')
     const navigate = useNavigate()
+    const [isLoadingState, setIsLoadingState] = useState(false)
     const [allConvIds, setAllConvIds] = useState([])
     const [currentConv, setCurrentConv] = useState('')
     const messagesEndRef = useRef(null)
@@ -124,6 +130,41 @@ function MainPage () {
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
     }
+    const DateRangePicker = () => {
+        // 处理日期范围变化
+        const handleDateChange = (dates, dateStrings) => {
+            if (dates && dates[0] && dates[1]) {
+                // 将两个日期用逗号拼接
+                const formattedValue = `${dateStrings[0]},${dateStrings[1]}`
+                setDeepSearchInputs(v => ({ ...v, date: formattedValue }))
+            } else {
+                setDeepSearchInputs(v => ({ ...v, date: '' }))
+            }
+        }
+
+        // 将字符串值转换为 DatePicker 需要的 moment 对象数组
+        const getDateRangeValue = () => {
+            if (!deepSearchInputs.date) return null
+
+            const [startStr, endStr] = deepSearchInputs.date.split(',')
+            return [
+                moment(startStr, 'YYYY-MM-DD'),
+                moment(endStr, 'YYYY-MM-DD')
+            ]
+        }
+
+        return (
+            <DatePicker.RangePicker
+                placeholder={['开始日期', '结束日期']}
+                value={getDateRangeValue()}
+                onChange={handleDateChange}
+                format="YYYY-MM-DD"
+                style={{ width: '100%' }}
+                allowClear
+            />
+        )
+    }
+
     useEffect(() => {
         const initializeAllConvs = async () => {
             try {
@@ -376,7 +417,15 @@ function MainPage () {
                 await processStream(reader)
 
                 // 获取最终位置数据（保持原有逻辑）
+                flushSync(() => {
+                    setIsLoadingState(true)
+                })
+                console.log("loading开始")
                 const locationResponse = await getlocation(userId, currentConv)
+                flushSync(() => {
+                    setIsLoadingState(false)
+                })
+                console.log("loading结束")
                 if (locationResponse.status === 200) {
                     const locationcontent = locationResponse.data.llm_content
 
@@ -458,7 +507,13 @@ function MainPage () {
                         msg.isLoading ? { ...msg, tool_results: data.tool_results, agent_results: data.agent_results, isLoading: false, isDeep: true } : msg
                     )
                 }))
+                flushSync(() => {
+                    setIsLoadingState(true)
+                })
                 const locationResponse = await getlocationdeepsearch(userId, currentConv)
+                flushSync(() => {
+                    setIsLoadingState(false)
+                })
                 if (locationResponse.status === 200) {
                     const locationcontent = locationResponse.data.llm_content
 
@@ -1124,11 +1179,9 @@ function MainPage () {
                                         value={deepSearchInputs.budget}
                                         onChange={e => setDeepSearchInputs(v => ({ ...v, budget: e.target.value }))}
                                     />
-                                    <Input
-                                        placeholder="日期"
-                                        type="text"
+                                    <DateRangePicker
                                         value={deepSearchInputs.date}
-                                        onChange={e => setDeepSearchInputs(v => ({ ...v, date: e.target.value }))}
+                                        onChange={date => setDeepSearchInputs(p => ({ ...p, date }))}
                                     />
                                     <Input
                                         placeholder="偏好（如美食/景点）"
@@ -1167,6 +1220,7 @@ function MainPage () {
                                 mapId={'tsinghua-map'}
                                 defaultZoom={10}
                                 gestureHandling="greedy"
+                                zIndex={0}
                                 defaultCenter={{ lat: 39.9042, lng: 116.4074 }} // 北京
                                 style={{ height: '100%', width: '100%' }}>
                                 <PoiMarkers pois={locations} />
@@ -1174,6 +1228,47 @@ function MainPage () {
                             </Map>
                         </APIProvider>
                     </div>
+                    {isLoadingState && (
+                        <div style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            zIndex: 1000,
+                            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                            padding: '16px 24px',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '18px',
+                            fontWeight: 'bold',
+                            color: '#333',
+                            transition: 'all 0.3s ease-in-out',
+                        }}>
+                            <div style={{ marginRight: '12px' }}>
+                                {/* 加载动画图标 */}
+                                <svg width="24" height="24" viewBox="0 0 38 38" stroke="#333">
+                                    <g fill="none" fillRule="evenodd">
+                                        <g transform="translate(1 1)" strokeWidth="2">
+                                            <circle strokeOpacity=".5" cx="18" cy="18" r="18" />
+                                            <path d="M36 18c0-9.94-8.06-18-18-18">
+                                                <animateTransform
+                                                    attributeName="transform"
+                                                    type="rotate"
+                                                    from="0 18 18"
+                                                    to="360 18 18"
+                                                    dur="1s"
+                                                    repeatCount="indefinite" />
+                                            </path>
+                                        </g>
+                                    </g>
+                                </svg>
+                            </div>
+                            正在加载地图...
+                        </div>
+                    )}
                 </Content>
             </Layout>
         </Layout >
