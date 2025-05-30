@@ -782,49 +782,91 @@ function MainPage () {
                             {tool_results?.filter(Boolean).flat().map((tool, index) => (
                                 ((tool && tool.title && tool.description && tool.url) &&
                                     <div
-                                        key={`tool-${tool.id || index}`} // 使用唯一标识[3](@ref)
+                                        key={`tool-${tool.id || index}`}
                                         style={{
-                                            flex: '1 1 30%', // 优化响应式布局[2](@ref)
-                                            minWidth: 280, // 防止内容挤压
-                                            padding: 16,
-                                            borderRadius: 8,
-                                            backgroundColor: '#f8f9fa',
-                                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                                            boxSizing: 'border-box', // 修复尺寸计算[5](@ref)
-                                            justifyContent: 'space-between',
+                                            flex: '1 1 30%',
+                                            minWidth: 280,
+                                            maxWidth: 320,
+                                            borderRadius: 12,
+                                            backgroundColor: '#ffffff',
+                                            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                                            boxSizing: 'border-box',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            overflow: 'hidden',
+                                            transition: 'transform 0.3s, box-shadow 0.3s',
+                                            ':hover': {
+                                                transform: 'translateY(-4px)',
+                                                boxShadow: '0 8px 20px rgba(0,0,0,0.12)'
+                                            }
                                         }}
                                     >
-                                        <h4 style={{ margin: 0, fontSize: 16 }}>{tool.title}</h4>
-                                        <p style={{
-                                            color: '#666',
-                                            margin: '8px 0',
-                                            minHeight: 40,
-                                            whiteSpace: 'nowrap',  // 禁止换行
-                                            overflow: 'hidden',    // 隐藏溢出内容
-                                            textOverflow: 'ellipsis' // 添加省略号
+                                        {/* 图片区域 - 顶部贴合边缘 */}
+                                        <div style={{
+                                            position: 'relative',
+                                            height: 160,
+                                            backgroundColor: '#f8f9fa',
                                         }}>
-                                            {tool.description?.slice(0, 50)}{tool.description?.length > 50 && '...'}
-                                        </p>
-                                        <a
-                                            href={tool.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            style={{
-                                                display: 'inline-block',
-                                                padding: '8px 12px',
-                                                backgroundColor: '#1890ff',
-                                                color: 'white',
-                                                borderRadius: 4,
-                                                textDecoration: 'none',
-                                                transition: 'opacity 0.2s',
-                                                ':hover': { opacity: 0.8 }
-                                            }}
-                                        >
-                                            查看详情 →
-                                        </a>
+                                            <img
+                                                src={`https://s0.wp.com/mshots/v1/${encodeURIComponent(tool.url)}?w=4000&h=3000`}
+                                                alt="网页预览"
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    objectFit: 'cover',
+                                                    display: 'block'
+                                                }}
+                                            />
+                                        </div>
+
+                                        {/* 内容区域 */}
+                                        <div style={{ padding: 16 }}>
+                                            {/* 标题区域 - 可点击跳转 */}
+                                            <a
+                                                href={tool.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                style={{
+                                                    display: 'block',
+                                                    textDecoration: 'none',
+                                                    marginBottom: 8 // 为域名留出空间
+                                                }}
+                                            >
+                                                <h4 style={{
+                                                    margin: 0,
+                                                    fontSize: 16,
+                                                    fontWeight: 600,
+                                                    color: '#1a1a1a',
+                                                    lineHeight: 1.4,
+                                                    transition: 'color 0.2s',
+                                                    ':hover': {
+                                                        color: '#1890ff' // 添加悬停颜色变化
+                                                    }
+                                                }}>
+                                                    {tool.title}
+                                                </h4>
+                                            </a>
+
+                                            {/* 域名显示 - 移动到标题下方，灰色小字 */}
+                                            <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                color: '#718096', // 中灰色,
+                                                opacity: 0.8,
+                                                fontSize: 12,
+                                                marginTop: 4
+                                            }}>
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ marginRight: 4 }}>
+                                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="#718096" strokeWidth="2" strokeLinecap="round" />
+                                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="#718096" strokeWidth="2" strokeLinecap="round" />
+                                                </svg>
+                                                {new URL(tool.url).hostname}
+                                            </div>
+                                        </div>
                                     </div>)
-                            ))}
-                        </div>
+                            ))
+                            }
+                        </div >
                     )
                 }
 
