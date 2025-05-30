@@ -288,6 +288,9 @@ function MainPage () {
     useEffect(() => {
         scrollToBottom()
     }, [messages[currentConv], currentConv])
+    useEffect(() => {
+        setLocation([])
+    }, [currentConv])
 
 
 
@@ -1145,7 +1148,7 @@ function MainPage () {
                                 />
                             )}
 
-                            {isDeepSearch[currentConv] && (
+                            {isDeepSearch[currentConv] ? (
                                 <Button
                                     type="primary"
                                     size="large"
@@ -1153,7 +1156,7 @@ function MainPage () {
                                 >
                                     发送
                                 </Button>
-                            )}
+                            ) : <div></div>}
                         </div>
                     </div>
 
