@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, use } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
     Layout,
     Button,
@@ -9,6 +9,8 @@ import {
     Popover,
     Row,
     Col,
+    Tag,
+    Divider,
     Switch,
     Affix,
     Dropdown,
@@ -16,11 +18,14 @@ import {
     Modal,
     DatePicker
 } from 'antd'
+import { ArrowRightOutlined, } from '@ant-design/icons'
+import { AiFillStar } from 'react-icons/ai'
+import { MdPlace } from 'react-icons/md' // 扁平风格的位置图标
+import './HotelCards.css' // 引入自定义样式
 import moment from 'moment'
 import ReactMarkdown from 'react-markdown'
 import { Typography } from '@mui/material'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { materialDark } from 'react-syntax-highlighter/dist/cjs/styles/prism'
 import remarkGfm from 'remark-gfm'
 import ReactCardFlip from 'react-card-flip'
 import {
@@ -34,7 +39,8 @@ import {
     SearchOutlined,
     RocketOutlined,
     HomeOutlined,
-    EnvironmentOutlined
+    EnvironmentOutlined,
+    FileDoneOutlined,
 } from '@ant-design/icons'
 import { InfoWindow } from '@vis.gl/react-google-maps'
 import { useNavigate } from 'react-router-dom'
@@ -42,21 +48,19 @@ import { flushSync } from 'react-dom'
 import { APIProvider, Map, Marker, Pin, AdvancedMarker, useMap } from '@vis.gl/react-google-maps'
 import { postdeepsearch, getallconvid, getdsconvid, getdscontentbyid, getcontentbyid, getlocation, getlocationdeepsearch, API_BASE_URL } from './api'
 import './MainPage.css'
+import { padding } from '@mui/system'
 const { Header, Sider, Content } = Layout
 
 
 
 
 const PoiMarkers = (pois) => {
-    console.log("POI数据:", pois.pois)
-    const [selectedPoi, setSelectedPoi] = useState(null)
-    console.log("POI数据长度:", pois.pois.length)
+    console.log("POI数据", pois)
     return (
         <>
             {pois.pois.length > 0 && (pois.pois.map((poi) => (
                 <AdvancedMarker
                     key={poi.key}
-                    onClick={() => setSelectedPoi(poi)}
                     position={poi.location}
                     title={poi.key}>
 
@@ -103,7 +107,7 @@ function MainPage () {
     const [collapsed, setCollapsed] = useState(false)
     const [deepSearchInputs, setDeepSearchInputs] = useState({
         destination: '',
-        budget: '',
+        startpoint: '',
         date: '',
         preference: ''
     })
@@ -120,6 +124,7 @@ function MainPage () {
     const userId = sessionStorage.getItem('userid') || 0
     const [locations, setLocation] = useState([])
     const buttonRef = useRef(null)  // 创建 ref
+
     // 布局样式配置
     const layoutStyle = {
         width: '100vw',
@@ -164,7 +169,6 @@ function MainPage () {
             />
         )
     }
-
     useEffect(() => {
         const initializeAllConvs = async () => {
             try {
@@ -215,7 +219,7 @@ function MainPage () {
                                 ...prev,
                                 [convid]: isDeep ? [{
                                     destination: res.data.destination,
-                                    budget: res.data.budget,
+                                    startpoint: res.data.startpoint,
                                     date: res.data.dates,
                                     preference: res.data.preferences,
                                     isUser: true,
@@ -259,7 +263,9 @@ function MainPage () {
         )
         const locations = sessionStorage.getItem('locations')
         if (locations) {
+            console.log("从sessionStorage获取位置数据")
             const parsedLocations = JSON.parse(locations)
+            console.log("解析后的位置数据", parsedLocations)
             setLocation(parsedLocations)
         }
         const ifiscreate = sessionStorage.getItem('ifiscreate')
@@ -277,7 +283,6 @@ function MainPage () {
             sessionStorage.removeItem('ifiscreate')
             sessionStorage.removeItem('inputText')
         }
-        console.log("messages:", messages)
     }, []
     )
     // 使用示例
@@ -290,20 +295,12 @@ function MainPage () {
             if (status === "OK") {
                 if (results[0]) {
                     // 解析结构化地址组件
-                    const addressComponents = results[0].address_components
-                    let city = "", state = ""
-
-                    addressComponents.forEach(component => {
-                        if (component.types.includes("locality")) {
-                            city = component.long_name
-                        }
-                        if (component.types.includes("administrative_area_level_1")) {
-                            state = component.short_name
-                        }
-                    })
-                    console.log("地址", results[0])
-                    console.log(`城市: ${city}, 州省: ${state}`)
+                    const formattedAddress = results[0].formatted_address
+                    const addressComponents = formattedAddress.split(',')
+                    const state = addressComponents[1]
+                    console.log(`州省: ${state}`)
                     setCurrentLocation(state)
+                    console.log("当前定位位置", state)
                 }
             } else {
                 console.error("逆地理编码失败:", status)
@@ -329,9 +326,7 @@ function MainPage () {
     useEffect(() => {
         scrollToBottom()
     }, [messages[currentConv], currentConv])
-    useEffect(() => {
-        setLocation([])
-    }, [currentConv])
+
 
 
 
@@ -466,8 +461,8 @@ function MainPage () {
                 alert('请输入目的地')
                 return
             }
-            if (!deepSearchInputs.budget.trim()) {
-                alert('请输入预算')
+            if (!deepSearchInputs.startpoint.trim()) {
+                alert('请输入出发地')
                 return
             }
             if (!deepSearchInputs.date.trim()) {
@@ -484,7 +479,7 @@ function MainPage () {
                 [currentConv]: (prev[currentConv] || []).concat([
                     {
                         destination: deepSearchInputs.destination,
-                        budget: deepSearchInputs.budget,
+                        startpoint: deepSearchInputs.startpoint,
                         date: deepSearchInputs.date,
                         preference: deepSearchInputs.preference,
                         isUser: true, isLoading: false, isDeep: true
@@ -498,7 +493,8 @@ function MainPage () {
                 date: '',
                 preference: ''
             })
-            const response = await postdeepsearch(userId, currentConv, deepSearchInputs.destination, deepSearchInputs.budget, deepSearchInputs.date, deepSearchInputs.preference, currentLocation)
+            console.log("当前location", currentLocation)
+            const response = await postdeepsearch(userId, currentConv, deepSearchInputs.destination, "budget", deepSearchInputs.date, deepSearchInputs.preference, deepSearchInputs.startpoint)
             if (response.status === 200) {
                 const data = response.data
                 setMessages(prev => ({
@@ -540,7 +536,7 @@ function MainPage () {
 
     }
 
-    const MessageBubble = ({ text, destination, budget, date, preference, tool_results, agent_results, isUser, isLoading, isDeep }) => {
+    const MessageBubble = ({ text, destination, startpoint, date, preference, tool_results, agent_results, isUser, isLoading, isDeep }) => {
         const components = {
             h1: ({ children }) => <h1 className="markdown-h1">{children}</h1>,
             h2: ({ children }) => <h2 className="markdown-h2">{children}</h2>,
@@ -557,7 +553,6 @@ function MainPage () {
                     <div className="code-block">
                         <div className="code-language">{match[1]}</div>
                         <SyntaxHighlighter
-                            style={materialDark}
                             language={match[1]}
                             PreTag="div"
                         >
@@ -722,8 +717,8 @@ function MainPage () {
                                     justifyContent: 'space-between',
                                     alignItems: 'center'
                                 }}>
-                                    <span style={{ color: '#6c757d' }}>预算</span>
-                                    <strong>{budget ? `${budget}` : '不限'}</strong>
+                                    <span style={{ color: '#6c757d' }}>出发地</span>
+                                    <strong>{startpoint ? `${startpoint}` : '不限'}</strong>
                                 </div>
                             </div>
 
@@ -870,6 +865,442 @@ function MainPage () {
                     )
                 }
 
+                const FlightCard = ({ flightData }) => {
+                    // 提取航班数据
+                    const flightArray = Object.values(flightData[0].airplane.from_to_flight1)
+                    const returnArray = Object.values(flightData[0].airplane.from_to_flight2)
+
+                    // 航班段组件（支持联程）
+                    const FlightSegment = ({ segment }) => {
+                        // 处理联程航班
+                        const flights = Array.isArray(segment) ? segment : [segment]
+
+                        return (
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '16px', // 航段之间的间距
+                            }}>
+                                {flights.map((flight, idx) => (
+                                    <React.Fragment key={idx}>
+                                        {/* 单个航段 */}
+                                        <div style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            padding: '12px',
+                                            backgroundColor: '#fafafa',
+                                            borderRadius: '6px'
+                                        }}>
+                                            {/* 出发信息 */}
+                                            <div style={{ textAlign: 'center', minWidth: 80 }}>
+                                                <div style={{ fontSize: 16, fontWeight: 600 }}>
+                                                    {flight.dep_time.split(' ')[1].substring(0, 5)}
+                                                </div>
+                                                <div style={{ fontSize: 12, color: '#666' }}>
+                                                    {flight.origin.iata_code}
+                                                </div>
+                                            </div>
+
+                                            {/* 箭头连接 */}
+                                            <div style={{ margin: '0 8px', color: '#1890ff' }}>
+                                                <ArrowRightOutlined style={{ transform: 'rotate(0deg)' }} />
+                                            </div>
+
+                                            {/* 到达信息 */}
+                                            <div style={{ textAlign: 'center', minWidth: 80 }}>
+                                                <div style={{ fontSize: 16, fontWeight: 600 }}>
+                                                    {flight.arr_time.split(' ')[1].substring(0, 5)}
+                                                </div>
+                                                <div style={{ fontSize: 12, color: '#666' }}>
+                                                    {flight.dest.iata_code}
+                                                </div>
+                                            </div>
+
+                                            {/* 航班信息 */}
+                                            <div style={{ marginLeft: 16, flex: 1 }}>
+                                                <div style={{ fontSize: 14, fontWeight: 500 }}>
+                                                    {flight.carrier} {flight.flight_number}
+                                                </div>
+                                                <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+                                                    {flight.aircraft}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* 转机标识 */}
+                                        {idx < flights.length - 1 && (
+                                            <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                margin: '8px 0',
+                                                color: '#666',
+                                                fontWeight: 500
+                                            }}>
+                                                <div style={{
+                                                    padding: '4px 16px',
+                                                    backgroundColor: '#f0f0f0',
+                                                    borderRadius: 20,
+                                                    fontSize: 13
+                                                }}>
+                                                    转机 · {flight.dest.name}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </React.Fragment>
+                                ))}
+                            </div>
+                        )
+                    }
+
+                    // 价格卡片组件
+                    const PriceCard = ({ price, currency }) => (
+                        <div style={{
+                            backgroundColor: '#f0f9ff',
+                            padding: '12px 16px',
+                            borderRadius: 6,
+                            textAlign: 'center',
+                            border: '1px solid #e6f7ff'
+                        }}>
+                            <div style={{ fontSize: 16, fontWeight: 600 }}>
+                                USD {price}
+                            </div>
+                        </div>
+                    )
+
+                    return (
+                        <div style={{ maxWidth: 800, margin: '0 auto' }}>
+                            {/* 去程航班 */}
+                            <Card
+                                title={`去程航班 · ${messages[currentConv][0].startpoint} → ${messages[currentConv][0].destination}`}
+                                headStyle={{
+                                    fontSize: 16,
+                                    fontWeight: 600,
+                                    backgroundColor: '#f0f7ff'
+                                }}
+                                style={{
+                                    marginBottom: 24,
+                                    marginTop: 24,
+                                    borderRadius: 8,
+                                    boxShadow: '0 2px 12px rgba(0,0,0,0.08)'
+                                }}
+                            >
+                                {flightArray.map((flightOption, index) => {
+                                    // 提取航班段数据
+                                    const segmentKeys = Object.keys(flightOption)
+                                        .filter(key => !isNaN(key))
+                                        .sort()
+                                    const segments = segmentKeys.map(key => flightOption[key])
+
+                                    return (
+                                        <Card
+                                            key={index}
+                                            style={{
+                                                marginBottom: 24,  // 增加航程之间的间距
+                                                borderRadius: 8,
+                                                border: '1px solid #f0f0f0'
+                                            }}
+                                            bodyStyle={{ padding: 0 }}
+                                        >
+                                            <Row align="middle">
+                                                <Col span={18} style={{ padding: '16px' }}>
+                                                    <FlightSegment segment={segments} />
+                                                </Col>
+                                                <Col span={6} style={{
+                                                    borderLeft: '1px dashed #f0f0f0',
+                                                    padding: '16px',
+                                                    display: 'flex',
+                                                    justifyContent: 'center',
+                                                    alignItems: 'center'
+                                                }}>
+                                                    <PriceCard
+                                                        price={flightOption.price}
+                                                        currency={flightOption.currency}
+                                                    />
+                                                </Col>
+                                            </Row>
+                                        </Card>
+                                    )
+                                })}
+                            </Card>
+
+                            <Divider />
+
+                            {/* 返程航班 */}
+                            <Card
+                                title={`返程航班 · ${messages[currentConv][0].destination} → ${messages[currentConv][0].startpoint}`}
+                                headStyle={{
+                                    fontSize: 16,
+                                    fontWeight: 600,
+                                    backgroundColor: '#f0f7ff'
+                                }}
+                                style={{
+                                    borderRadius: 8,
+                                    boxShadow: '0 2px 12px rgba(0,0,0,0.08)'
+                                }}
+                            >
+                                {returnArray.map((flightOption, index) => {
+                                    // 提取航班段数据
+                                    const segmentKeys = Object.keys(flightOption)
+                                        .filter(key => !isNaN(key))
+                                        .sort()
+                                    const segments = segmentKeys.map(key => flightOption[key])
+
+                                    return (
+                                        <Card
+                                            key={index}
+                                            style={{
+                                                marginBottom: 24,  // 增加航程之间的间距
+                                                borderRadius: 8,
+                                                border: '1px solid #f0f0f0'
+                                            }}
+                                            bodyStyle={{ padding: 0 }}
+                                        >
+                                            <Row align="middle">
+                                                <Col span={18} style={{ padding: '16px' }}>
+                                                    <FlightSegment segment={segments} />
+                                                </Col>
+                                                <Col span={6} style={{
+                                                    borderLeft: '1px dashed #f0f0f0',
+                                                    padding: '16px',
+                                                    display: 'flex',
+                                                    justifyContent: 'center',
+                                                    alignItems: 'center'
+                                                }}>
+                                                    <PriceCard
+                                                        price={flightOption.price}
+                                                        currency={flightOption.currency}
+                                                    />
+                                                </Col>
+                                            </Row>
+                                        </Card>
+                                    )
+                                })}
+                            </Card>
+                        </div>
+                    )
+                }
+
+                const HotelCard = ({ hotel }) => {
+                    const [isFlipped, setIsFlipped] = useState(false)
+
+                    const handleClick = (e) => {
+                        e.preventDefault()
+                        setIsFlipped(!isFlipped)
+                    }
+                    const transportationInfo = hotel.nearby_places?.[0]?.transportations?.[0]
+                        ? `${hotel.nearby_places[0].transportations[0].type}: ${hotel.nearby_places[0].transportations[0].duration}`
+                        : null
+                    // 内联样式定义
+                    const styles = {
+                        container: {
+                            perspective: '1000px',
+                            height: '320px',
+                            marginTop: '24px',
+                            justifyContent: 'space-between',
+                        },
+                        card: {
+                            width: '100%',
+                            height: '320px',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                            overflow: 'hidden',
+                            position: 'relative',
+                            backgroundColor: '#fff'
+                        },
+                        imageContainer: {
+                            height: '170px',
+                            backgroundImage: `url(${hotel.main_image || 'https://via.placeholder.com/300x150'})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            position: 'relative'
+                        },
+                        ratingBadge: {
+                            position: 'absolute',
+                            top: '10px',
+                            right: '10px',
+                            backgroundColor: 'rgba(0,0,0,0.7)',
+                            color: '#ffc107',
+                            padding: '4px 8px',
+                            borderRadius: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            fontSize: '14px'
+                        },
+                        cardContent: {
+                            padding: '16px'
+                        },
+                        hotelName: {
+                            fontSize: '18px',
+                            marginTop: '0px',
+                            fontWeight: '600',
+                            marginBottom: '8px',
+                            color: '#333'
+                        },
+                        location: {
+                            display: 'flex',
+                            alignItems: 'center',
+                            color: '#666',
+                            fontSize: '14px',
+                            marginBottom: '8px'
+                        },
+                        transportation: {
+                            display: 'flex',
+                            alignItems: 'center',
+                            color: '#888',
+                            fontSize: '12px',
+                            marginLeft: '20px' // 与位置图标对齐
+                        },
+                        price: {
+                            fontSize: '16px',
+                            fontWeight: 'bold',
+                            color: '#1890ff',
+                            marginBottom: '12px'
+                        },
+                        flipHint: {
+                            position: 'absolute',
+                            bottom: '10px',
+                            right: '10px',
+                            fontSize: '12px',
+                            color: '#1890ff',
+                            cursor: 'pointer'
+                        },
+                        amenitiesSection: {
+                            marginBottom: '16px'
+                        },
+                        locationContainer: {
+                            marginBottom: '8px',
+                        },
+                        amenitiesTags: {
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: '8px',
+                            marginTop: '8px'
+                        },
+                        tag: {
+                            backgroundColor: '#f0f2f5',
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            fontSize: '12px'
+                        },
+                        priceDetails: {
+                            borderTop: '1px solid #f0f0f0',
+                            paddingTop: '12px',
+                            fontWeight: '500'
+                        },
+                        detailRow: {
+                            display: 'flex',
+                            padding: ' 2px 0',
+                            justifyContent: 'space-between',
+                            marginBottom: '8px',
+                            fontSize: '14px',
+
+                        },
+                        totalPrice: {
+                            fontWeight: 'bold',
+                            color: '#1890ff',
+                        }
+                    }
+
+                    return (
+                        <Col span={24} style={{ marginBottom: '24px' }}>
+                            <div style={styles.container}>
+                                <ReactCardFlip
+                                    isFlipped={isFlipped}
+                                    flipDirection="horizontal"
+                                    flipSpeedFrontToBack={0.6}
+                                    flipSpeedBackToFront={0.6}
+                                >
+                                    {/* 卡片正面 */}
+                                    <div key="front" style={styles.card} onClick={handleClick}>
+                                        <div style={styles.imageContainer}>
+                                            <div style={styles.ratingBadge}>
+                                                <AiFillStar style={{ marginRight: '4px' }} />
+                                                <span>{hotel.rating}</span>
+                                            </div>
+                                        </div>
+
+                                        <div style={styles.cardContent}>
+                                            <h3 style={styles.hotelName}>{hotel.name}</h3>
+                                            <div style={styles.locationContainer}>
+                                                <div style={styles.location}>
+                                                    <MdPlace style={{ marginRight: '6px', color: '#1890ff' }} /> {/* 扁平风格图标 */}
+                                                    Near {hotel.nearby_places?.[0]?.name || "City Center"}
+                                                </div>
+
+                                                {/* 显示交通信息 */}
+                                                {transportationInfo && (
+                                                    <div style={styles.transportation}>
+                                                        {transportationInfo}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div style={styles.price}>
+                                                ${hotel.price_per_night?.extracted_price || '0'}/night
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                    {/* 卡片背面 */}
+                                    <div key="back" style={styles.card} onClick={handleClick}>
+                                        <div style={{ ...styles.cardContent, height: '100%' }}>
+                                            <h3 style={styles.hotelName}>{hotel.name}</h3>
+
+                                            <div style={styles.amenitiesSection}>
+                                                <h4>设施与服务</h4>
+                                                <div style={styles.amenitiesTags}>
+                                                    {hotel.amenities?.slice(0, 11).map((item, index) => (
+                                                        <span key={index} style={styles.tag}>{item}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div style={styles.priceDetails}>
+                                                <div style={styles.detailRow}>
+                                                    <span>税前价格:</span>
+                                                    <span>${hotel.price_per_night?.extracted_price_before_taxes || '0'}</span>
+                                                </div>
+                                                <div style={styles.detailRow}>
+                                                    <span>税费:</span>
+                                                    <span>${(
+                                                        (hotel.price_per_night?.extracted_price || 0) -
+                                                        (hotel.price_per_night?.extracted_price_before_taxes || 0)
+                                                    ).toFixed(2)}</span>
+                                                </div>
+                                                <div style={styles.detailRow}>
+                                                    <span>总价:</span>
+                                                    <span style={styles.totalPrice}>
+                                                        ${hotel.price_per_night?.extracted_price || '0'}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </ReactCardFlip>
+                            </div>
+                        </Col>
+                    )
+                }
+
+                const HotelCards = () => {
+                    const data = tool_results[3]
+                    console.log("酒店数据", data[0].hotel)
+                    const dat = Object.values(data[0].hotel)
+                    console.log("酒店数据列表", dat)
+                    return (
+                        < Row gutter={[16, 16]} >
+                            {
+                                dat.map((item, index) => (
+                                    <HotelCard key={`hotel-${index}`} hotel={item} />
+                                ))
+                            }
+                        </Row >
+                    )
+                }
+
                 const AgentCards = () => {
                     const [visibleModal, setVisibleModal] = useState(null)
 
@@ -901,7 +1332,7 @@ function MainPage () {
                             name: '清小规',
                             icon: <EnvironmentOutlined style={{ fontSize: 32 }} />,
                             content: '地理信息系统，支持多维路径规划...'
-                        }
+                        },
                     ]
 
                     return (
@@ -963,6 +1394,35 @@ function MainPage () {
                                     </Modal>
                                 </Col>
                             ))}
+                            <Card
+                                title="清小规 · 综合分析报告"
+                                headStyle={{
+                                    fontSize: 18,
+                                    fontWeight: 600,
+                                    backgroundColor: '#f0f7ff'
+                                }}
+                                style={{
+                                    borderRadius: 8,
+                                    boxShadow: '0 2px 12px rgba(0,0,0,0.08)'
+                                }}
+                            >
+                                <div style={{
+                                    fontSize: 16,
+                                    lineHeight: 1.8,
+                                    padding: 16
+                                }}>
+                                    <div className="markdown-container">
+                                        <ReactMarkdown
+                                            remarkPlugins={[remarkGfm]}
+                                            components={components}
+                                            rehypePlugins={[]}
+                                            skipHtml={true}
+                                        >
+                                            {cleanContent({ text: agent_results[4].llm_output })}
+                                        </ReactMarkdown>
+                                    </div>
+                                </div>
+                            </Card>
                         </Row>
                     )
                 }
@@ -981,6 +1441,8 @@ function MainPage () {
                         {/* 基础信息展示（网页1卡片布局优化） */}
                         <div style={{ width: '100%' }}>
                             {renderToolResults()}
+                            <FlightCard flightData={tool_results[2]} />
+                            <HotelCards />
                             <AgentCards />
                         </div>
                     </div>
@@ -1161,7 +1623,7 @@ function MainPage () {
                                     key={`${currentConv}-${index}`}
                                     text={msg?.text || ''}
                                     destination={msg?.destination || ''}
-                                    budget={msg?.budget || ''}
+                                    startpoint={msg?.startpoint || ''}
                                     date={msg?.date || ''}
                                     preference={msg?.preference || ''}
                                     tool_results={msg?.tool_results || []}
@@ -1212,14 +1674,14 @@ function MainPage () {
                             {isDeepSearch[currentConv] ? (
                                 <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
                                     <Input
+                                        placeholder="出发地"
+                                        value={deepSearchInputs.startpoint}
+                                        onChange={e => setDeepSearchInputs(v => ({ ...v, startpoint: e.target.value }))}
+                                    />
+                                    <Input
                                         placeholder="目的地"
                                         value={deepSearchInputs.destination}
                                         onChange={e => setDeepSearchInputs(v => ({ ...v, destination: e.target.value }))}
-                                    />
-                                    <Input
-                                        placeholder="预算"
-                                        value={deepSearchInputs.budget}
-                                        onChange={e => setDeepSearchInputs(v => ({ ...v, budget: e.target.value }))}
                                     />
                                     <DateRangePicker
                                         value={deepSearchInputs.date}

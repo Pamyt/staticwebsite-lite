@@ -1,0 +1,158 @@
+/* 卡片容器 - 添加3D透视效果 */
+.hotel-card-container {
+    perspective: 1000px;
+    height: 300px;
+    /* 固定高度确保横向布局 */
+}
+
+/* 卡片主体 - 横向布局 */
+.hotel-card {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* 翻转状态 */
+.hotel-card.flipped {
+    transform: rotateY(180deg);
+}
+
+/* 正反面公共样式 */
+.card-front,
+.card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    display: flex;
+}
+
+/* 正面布局 - 横向设计 */
+.card-front {
+    flex-direction: row;
+    background: white;
+}
+
+/* 图片区域 */
+.image-container {
+    flex: 0 0 40%;
+    background: #f0f2f5;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 内容区域 */
+.card-content {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* 背面样式 */
+.card-back {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 20px;
+    transform: rotateY(180deg);
+    /* 初始背面旋转180度 */
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* 评分徽章 */
+.rating-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+    z-index: 10;
+}
+
+.star-icon {
+    color: #FFD700;
+    margin-right: 5px;
+}
+
+/* 酒店名称 */
+.hotel-name {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #2c3e50;
+}
+
+/* 位置信息 */
+.location {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    color: #6c757d;
+    font-size: 0.95rem;
+}
+
+/* 价格显示 */
+.price {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #e74c3c;
+    margin: 10px 0;
+}
+
+.total-price {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #e74c3c;
+}
+
+/* 设施标签 */
+.amenities-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.tag {
+    background: #e6f7ff;
+    border: 1px solid #91d5ff;
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 0.85rem;
+}
+
+/* 价格明细 */
+.price-details {
+    margin-top: 16px;
+    border-top: 1px solid #f0f0f0;
+    padding-top: 12px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+/* 翻转提示 */
+.flip-hint {
+    text-align: center;
+    color: #1890ff;
+    font-size: 0.9rem;
+    padding: 8px;
+    background: rgba(24, 144, 255, 0.1);
+    border-radius: 4px;
+    margin-top: auto;
+}
