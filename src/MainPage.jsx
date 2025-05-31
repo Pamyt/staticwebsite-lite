@@ -1313,23 +1313,23 @@ function MainPage () {
                             content: '智能搜索分析系统，支持多维度数据检索...'
                         },
                         {
-                            nid: 1,
+                            nid: 2,
                             id: 'flight',
-                            name: '清小机',
+                            name: '清小飞',
                             icon: <RocketOutlined style={{ fontSize: 32 }} />,
                             content: '航班动态追踪模块，实时更新全球航班信息...'
                         },
                         {
-                            nid: 2,
+                            nid: 3,
                             id: 'hotel',
-                            name: '清小酒',
+                            name: '清小居',
                             icon: <HomeOutlined style={{ fontSize: 32 }} />,
                             content: '酒店智能推荐引擎，基于用户偏好精准匹配...'
                         },
                         {
-                            nid: 3,
+                            nid: 1,
                             id: 'map',
-                            name: '清小规',
+                            name: '清小计',
                             icon: <EnvironmentOutlined style={{ fontSize: 32 }} />,
                             content: '地理信息系统，支持多维路径规划...'
                         },
@@ -1395,7 +1395,7 @@ function MainPage () {
                                 </Col>
                             ))}
                             <Card
-                                title="清小规 · 综合分析报告"
+                                title="清小结 · 综合分析报告"
                                 headStyle={{
                                     fontSize: 18,
                                     fontWeight: 600,
