@@ -42,7 +42,7 @@ import {
     EnvironmentOutlined,
     FileDoneOutlined,
 } from '@ant-design/icons'
-import { InfoWindow } from '@vis.gl/react-google-maps'
+import { useMapsLibrary } from '@vis.gl/react-google-maps'
 import { useNavigate } from 'react-router-dom'
 import { flushSync } from 'react-dom'
 import { APIProvider, Map, Marker, Pin, AdvancedMarker, useMap } from '@vis.gl/react-google-maps'
@@ -55,7 +55,8 @@ const { Header, Sider, Content } = Layout
 
 
 const PoiMarkers = (pois) => {
-    console.log("POI数据", pois)
+    console.log("POI原数据", pois)
+
     return (
         <>
             {pois.pois.length > 0 && (pois.pois.map((poi) => (
@@ -72,10 +73,11 @@ const PoiMarkers = (pois) => {
         </>
     )
 }
-let geocoder = null
 const MapComponent = ({ locations }) => {
     const map = useMap()
-    geocoder = new window.google.maps.Geocoder()
+
+    const placesLibrary = useMapsLibrary('places')
+
     // 边界计算函数
     const calculateBounds = locations => {
         const bounds = new window.google.maps.LatLngBounds()
@@ -84,9 +86,7 @@ const MapComponent = ({ locations }) => {
     }
     // 自适应逻辑
     useEffect(() => {
-
         if (map && locations.length !== 0) {
-
             const bounds = calculateBounds(locations)
 
             map.fitBounds(bounds, {
@@ -96,7 +96,7 @@ const MapComponent = ({ locations }) => {
                 left: 20
             })
         }
-    }, [map, locations])
+    }, [map, placesLibrary, locations])
     // 限制最小缩放级别
 
 
@@ -253,14 +253,6 @@ function MainPage () {
         //initialize()
         //initialize_deepsearch()
         initializeAllConvs()
-        navigator.geolocation.getCurrentPosition(
-            position => {
-                const { latitude, longitude } = position.coords
-                // 调用第三方地图API获取名称
-                getAddressName(latitude, longitude)
-            },
-            error => console.error("定位失败:", error)
-        )
         const locations = sessionStorage.getItem('locations')
         if (locations) {
             console.log("从sessionStorage获取位置数据")
@@ -288,25 +280,7 @@ function MainPage () {
     // 使用示例
 
     // 输出：中国北京市海淀区蓝旗营清华路
-    function getAddressName (lat, lng) {
-        const latlng = { lat: parseFloat(lat), lng: parseFloat(lng) }
 
-        geocoder.geocode({ location: latlng, language: 'en' }, (results, status) => {
-            if (status === "OK") {
-                if (results[0]) {
-                    // 解析结构化地址组件
-                    const formattedAddress = results[0].formatted_address
-                    const addressComponents = formattedAddress.split(',')
-                    const state = addressComponents[1]
-                    console.log(`州省: ${state}`)
-                    setCurrentLocation(state)
-                    console.log("当前定位位置", state)
-                }
-            } else {
-                console.error("逆地理编码失败:", status)
-            }
-        })
-    }
     const handleCreateConv = (type) => {
         const newConvId = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
 
@@ -422,20 +396,22 @@ function MainPage () {
                 })
                 console.log("loading结束")
                 if (locationResponse.status === 200) {
-                    const locationcontent = locationResponse.data.llm_content
+                    const locationcontent = Object.values(locationResponse.data.geo_info)
+                    console.log("位置数据", locationcontent)
 
-                    const transformed = locationcontent.map(item => {
-                        const [key] = Object.keys(item)
-                        const [lng, lat] = item[key]
-
-                        return {
-                            key,
-                            location: {
-                                lat: Number(lat.toFixed(6)),
-                                lng: Number(lng.toFixed(6))
+                    const transformed = locationcontent.flatMap(item =>
+                        item.map(poi => {
+                            console.log("POI数据", poi)
+                            return {
+                                key: poi.name,
+                                location: {
+                                    lat: Number(poi.latitude.toFixed(6)),
+                                    lng: Number(poi.longitude.toFixed(6))
+                                }
                             }
-                        }
-                    })
+                        })
+                    )
+                    console.log("转换后的位置数据", transformed)
 
                     setLocation(transformed)
                     sessionStorage.setItem('locations', JSON.stringify(transformed))
@@ -511,17 +487,15 @@ function MainPage () {
                     setIsLoadingState(false)
                 })
                 if (locationResponse.status === 200) {
-                    const locationcontent = locationResponse.data.llm_content
+                    const locationcontent = Object.values(locationResponse.data.geo_info)
 
                     const transformed = locationcontent.map(item => {
-                        const [key] = Object.keys(item)
-                        const [lng, lat] = item[key]
 
                         return {
-                            key,
+                            key: item.name,
                             location: {
-                                lat: Number(lat.toFixed(6)),
-                                lng: Number(lng.toFixed(6))
+                                lat: Number(item.latitude.toFixed(6)),
+                                lng: Number(item.longitude.toFixed(6))
                             }
                         }
                     })
