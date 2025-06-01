@@ -660,23 +660,7 @@ function MainPage () {
                             flexWrap: 'wrap', // 允许换行[8](@ref)
                             margin: '5px',
                         }}>
-                            {/* 目的地卡片 */}
-                            <div style={{
-                                flexBasis: '45%',
-                                padding: 12,
-                                background: '#f8f9fa',
-                                borderRadius: 6,
-                                minWidth: 200
-                            }}>
-                                <div style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center'
-                                }}>
-                                    <span style={{ color: '#6c757d' }}>目的地</span>
-                                    <strong>{destination || '未指定'}</strong>
-                                </div>
-                            </div>
+
 
                             {/* 预算卡片 */}
                             <div style={{
@@ -693,6 +677,23 @@ function MainPage () {
                                 }}>
                                     <span style={{ color: '#6c757d' }}>出发地</span>
                                     <strong>{startpoint ? `${startpoint}` : '不限'}</strong>
+                                </div>
+                            </div>
+                            {/* 目的地卡片 */}
+                            <div style={{
+                                flexBasis: '45%',
+                                padding: 12,
+                                background: '#f8f9fa',
+                                borderRadius: 6,
+                                minWidth: 200
+                            }}>
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center'
+                                }}>
+                                    <span style={{ color: '#6c757d' }}>目的地</span>
+                                    <strong>{destination || '未指定'}</strong>
                                 </div>
                             </div>
 
@@ -1683,7 +1684,9 @@ function MainPage () {
                                 <Button
                                     type="primary"
                                     size="large"
-                                    onClick={() => handleSend()}
+                                    onClick={() => handleSend()
+                                    }
+                                    disabled={messages?.[currentConv]?.length > 0}
                                 >
                                     发送
                                 </Button>
