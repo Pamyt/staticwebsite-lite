@@ -28,7 +28,8 @@ export function postdeepsearch(userid: number, conversation_id: number, destinat
 export function getlocation(userid: number, conversation_id: number) {
     return axios.post(`${API_BASE_URL}/show_lattest_longtitude_latitude`, {
         user_id: Number(userid),
-        conversation_id: String(conversation_id)
+        conversation_id: String(conversation_id),
+        image_search: true
     }, {
         timeout: TIMEOUT
     });
@@ -36,7 +37,8 @@ export function getlocation(userid: number, conversation_id: number) {
 export function getlocationdeepsearch(userid: number, conversation_id: number) {
     return axios.post(`${API_BASE_URL}/show_lattest_deepsearch_longtitude_latitude`, {
         user_id: Number(userid),
-        conversation_id: String(conversation_id)
+        conversation_id: String(conversation_id),
+        image_search: true
     }, {
         timeout: TIMEOUT
     });

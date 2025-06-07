@@ -42,7 +42,7 @@ import {
     EnvironmentOutlined,
     FileDoneOutlined,
 } from '@ant-design/icons'
-import { useMapsLibrary } from '@vis.gl/react-google-maps'
+import { useMapsLibrary, InfoWindow } from '@vis.gl/react-google-maps'
 import { useNavigate } from 'react-router-dom'
 import { flushSync } from 'react-dom'
 import { APIProvider, Map, Marker, Pin, AdvancedMarker, useMap } from '@vis.gl/react-google-maps'
@@ -54,22 +54,119 @@ const { Header, Sider, Content } = Layout
 
 
 
-const PoiMarkers = (pois) => {
-    console.log("POI原数据", pois)
+const PoiMarkers = ({ pois }) => {
+    const [selectedPoi, setSelectedPoi] = useState(null)
+
+    const handleMarkerClick = (poi) => {
+        setSelectedPoi(poi)
+        // 禁用页面滚动[1,2](@ref)
+        document.body.style.overflow = 'hidden'
+    }
+
+    const handleCloseInfoWindow = () => {
+        setSelectedPoi(null)
+        // 恢复页面滚动[1,2](@ref)
+        document.body.style.overflow = ''
+    }
 
     return (
         <>
-            {pois.pois.length > 0 && (pois.pois.map((poi) => (
-                <AdvancedMarker
-                    key={poi.key}
-                    position={poi.location}
-                    title={poi.key}>
+            {pois.length > 0 && pois.map((poi) => (
+                <React.Fragment key={poi.key}>
+                    <AdvancedMarker
+                        position={poi.location}
+                        title={poi.key}
+                        onClick={() => handleMarkerClick(poi)}
+                    >
+                        <Pin background={'#FBBC04'} glyphColor={'#000'} borderColor={'#000'} />
+                        <img
+                            src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/pin_drop/default/48px.svg"
+                            alt="Marker icon"
+                        />
+                    </AdvancedMarker>
 
-                    <Pin background={'#FBBC04'} glyphColor={'#000'} borderColor={'#000'} />
-                    <img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/pin_drop/default/48px.svg" />
+                    {selectedPoi && selectedPoi.key === poi.key && (
+                        <InfoWindow
+                            position={poi.location}
+                            onCloseClick={handleCloseInfoWindow}
+                        >
+                            <div style={{
+                                padding: 12,
+                                boxSizing: 'border-box',
+                                overflow: 'hidden' // 禁用内部滚动[1](@ref)
+                            }}>
+                                {/* 2×2图片网格布局 */}
+                                {poi.image && poi.image.length > 0 && (
+                                    <div style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(2, 1fr)',
+                                        gridTemplateRows: 'repeat(2, 1fr)',
+                                        gap: 8,
+                                        marginBottom: 12
+                                    }}>
+                                        {poi.image.slice(0, 4).map((img, index) => (
+                                            <img
+                                                key={index}
+                                                src={img}
+                                                alt={`${poi.name} ${index + 1}`}
+                                                style={{
+                                                    width: '100%',
+                                                    height: 85,
+                                                    objectFit: 'cover',
+                                                    borderRadius: 4
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
 
-                </AdvancedMarker>
-            )))}
+                                {/* 名称和评分 */}
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    marginBottom: 8
+                                }}>
+                                    <h3 style={{
+                                        margin: 0,
+                                        fontSize: 18,
+                                        fontWeight: 600
+                                    }}>
+                                        {poi.key}  {/* 修正为poi.name */}
+                                    </h3>
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        backgroundColor: '#f0f0f0',
+                                        padding: '4px 8px',
+                                        borderRadius: 12
+                                    }}>
+                                        <span style={{
+                                            marginRight: 4,
+                                            color: '#FF9529',
+                                            fontWeight: 'bold'
+                                        }}>
+                                            ★
+                                        </span>
+                                        <span>{poi.rating}</span>
+                                    </div>
+                                </div>
+
+                                {/* 描述 */}
+                                <p style={{
+                                    margin: 0,
+                                    fontSize: 14,
+                                    lineHeight: 1.5,
+                                    color: '#555',
+                                    overflow: 'hidden' // 隐藏溢出内容
+                                }}>
+                                    {poi.description}
+                                </p>
+                            </div>
+                        </InfoWindow>
+                    )}
+                </React.Fragment>
+            ))}
         </>
     )
 }
@@ -407,7 +504,11 @@ function MainPage () {
                                 location: {
                                     lat: Number(poi.latitude.toFixed(6)),
                                     lng: Number(poi.longitude.toFixed(6))
-                                }
+                                },
+                                description: poi.description || '',
+                                image: poi.image || [],
+                                rating: poi.rating || 0,
+                                free: poi.free || false,
                             }
                         })
                     )
@@ -452,7 +553,7 @@ function MainPage () {
 
             setMessages(prev => ({
                 ...prev,
-                [currentConv]: (prev[currentConv] || []).concat([
+                [currentConv]: [
                     {
                         destination: deepSearchInputs.destination,
                         startpoint: deepSearchInputs.startpoint,
@@ -460,7 +561,7 @@ function MainPage () {
                         preference: deepSearchInputs.preference,
                         isUser: true, isLoading: false, isDeep: true
                     },
-                    { text: '', isUser: false, isLoading: true, isDeep: true }])
+                    { text: '', isUser: false, isLoading: true, isDeep: true }]
             }))
 
             setDeepSearchInputs({
@@ -487,7 +588,8 @@ function MainPage () {
                     setIsLoadingState(false)
                 })
                 if (locationResponse.status === 200) {
-                    const locationcontent = Object.values(locationResponse.data.geo_info)
+                    const locationcontent = Object.values(locationResponse.data.geo_info)[0]
+                    console.log("深度搜索位置数据", locationcontent)
 
                     const transformed = locationcontent.map(item => {
 
@@ -496,7 +598,11 @@ function MainPage () {
                             location: {
                                 lat: Number(item.latitude.toFixed(6)),
                                 lng: Number(item.longitude.toFixed(6))
-                            }
+                            },
+                            description: item.description || '',
+                            image: item.image || [],
+                            rating: item.rating || 0,
+                            free: item.free || false,
                         }
                     })
 
